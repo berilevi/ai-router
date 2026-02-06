@@ -24,13 +24,14 @@ A powerful Ollama-compatible API bridge that allows you to use Google Gemini (vi
 
 ## Supported Providers
 
-| Provider | Type | Authentication | Models |
-|----------|------|----------------|--------|
-| Gemini Web | Browser Automation | Google Account | gemini, gemini-pro, gemini-ultra |
-| Gemini API | Official API | API Key | gemini-1.5-flash, gemini-1.5-pro, etc. |
-| OpenAI | API | API Key | gpt-4o, gpt-4o-mini, gpt-4, gpt-3.5-turbo |
-| Anthropic | API | API Key | claude-3-5-sonnet, claude-3-opus, etc. |
-| Custom | OpenAI-compatible | API Key | Configurable |
+| Provider | Type | Authentication | Models | Status |
+|----------|------|----------------|--------|--------|
+| Gemini Web | Browser Automation | Google Account | gemini, gemini-pro, gemini-ultra | ✓ |
+| Gemini API | Official API | API Key | gemini-1.5-flash, gemini-1.5-pro, etc. | ✓ |
+| OpenAI | API | API Key | gpt-4o, gpt-4o-mini, gpt-4, gpt-3.5-turbo | ✓ |
+| **Anthropic (Native)** | **Native SDK** | **API Key** | **claude-3-5-sonnet, claude-3-opus, etc.** | **✓ NEW** |
+| Anthropic (Compatible) | OpenAI-compatible wrapper | API Key | claude-3-5-sonnet, claude-3-opus, etc. | ✓ Fallback |
+| Custom | OpenAI-compatible | API Key | Configurable | ✓ |
 
 ## Quick Start
 
@@ -81,10 +82,17 @@ OPENAI_API_KEY=your-openai-api-key
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_DEFAULT_MODEL=gpt-4o-mini
 
-# Anthropic (optional)
+# Anthropic (Native Provider with fallback to OpenAI-compatible)
 ANTHROPIC_API_KEY=your-anthropic-key
 ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
 ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
+
+# Anthropic Provider Mode (NEW)
+# Options: native (recommended), compatible (OpenAI wrapper), auto (default)
+# - native: Use Anthropic SDK directly for best compatibility
+# - compatible: Use OpenAI-compatible wrapper
+# - auto: Use native SDK
+ANTHROPIC_PROVIDER_MODE=auto
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=60000
@@ -271,6 +279,31 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_DEFAULT_MODEL=gpt-4o-mini
 ```
 
+### Anthropic Provider (Native)
+
+**NEW**: The Anthropic provider now uses the official `@anthropic-ai/sdk` for native integration with automatic fallback to OpenAI-compatible mode if configured.
+
+**Features:**
+- Native integration with Anthropic's API
+- Automatic system message handling (Anthropic-specific format)
+- Vision/image support with automatic MIME type detection
+- Tool/function calling with format conversion from OpenAI to Anthropic
+- Streaming with proper token usage tracking
+
+**Configuration:**
+```env
+ANTHROPIC_API_KEY=your-anthropic-key
+ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
+
+# Provider mode: native, compatible, or auto (recommended)
+ANTHROPIC_PROVIDER_MODE=auto
+```
+
+**Mode Selection:**
+- `native`: Always use Anthropic SDK directly (recommended for best compatibility)
+- `compatible`: Always use OpenAI-compatible wrapper
+- `auto`: Use native SDK (default, most flexible)
+
 ## Advanced Configuration
 
 ### Custom Model Mappings
@@ -414,7 +447,7 @@ npm run dev
 # Build for production
 npm run build
 
-# Run tests
+# Run test suite (57 tests covering all providers)
 npm test
 
 # Lint code
@@ -426,40 +459,44 @@ npm run lint
 ```
 ai-router/
 ├── src/
-│   ├── providers/          # AI provider implementations
-│   │   ├── base.ts         # Base provider class
-│   │   ├── geminiWeb.ts    # Gemini Web (Puppeteer)
-│   │   ├── geminiApi.ts    # Gemini API
-│   │   ├── openaiCompatible.ts  # OpenAI-compatible
-│   │   └── index.ts        # Provider factory
-│   ├── routes/             # Express routes
-│   │   ├── api.ts          # Ollama-compatible API
-│   │   ├── health.ts       # Health endpoints
-│   │   └── metrics.ts      # Metrics endpoints
-│   ├── middleware/         # Express middleware
+│   ├── providers/               # AI provider implementations
+│   │   ├── base.ts              # Base provider class
+│   │   ├── geminiWeb.ts         # Gemini Web (Puppeteer)
+│   │   ├── geminiApi.ts         # Gemini API
+│   │   ├── anthropic.ts         # Anthropic (Native SDK) - NEW
+│   │   ├── openaiCompatible.ts  # OpenAI-compatible wrapper
+│   │   ├── index.ts             # Provider factory with mode selection
+│   │   ├── anthropic.test.ts    # Anthropic provider tests (52 tests)
+│   │   └── index.test.ts        # Factory tests (5 tests)
+│   ├── routes/                  # Express routes
+│   │   ├── api.ts               # Ollama-compatible API
+│   │   ├── health.ts            # Health endpoints
+│   │   └── metrics.ts           # Metrics endpoints
+│   ├── middleware/              # Express middleware
 │   │   └── errorHandler.ts
-│   ├── utils/              # Utilities
-│   │   ├── config.ts       # Configuration
-│   │   ├── configValidator.ts  # Config validation
-│   │   ├── logger.ts       # Winston logger
-│   │   ├── metrics.ts      # Metrics collection
-│   │   ├── modelRouter.ts  # Model routing logic
-│   │   ├── requestQueue.ts # Request queue & rate limiting
-│   │   ├── retryHandler.ts # Error recovery & retry logic
-│   │   └── sessionManager.ts   # Session persistence
-│   ├── types/              # TypeScript types
+│   ├── utils/                   # Utilities
+│   │   ├── config.ts            # Configuration with provider mode validation
+│   │   ├── configValidator.ts   # Config validation
+│   │   ├── logger.ts            # Winston logger
+│   │   ├── metrics.ts           # Metrics collection
+│   │   ├── modelRouter.ts       # Model routing logic
+│   │   ├── requestQueue.ts      # Request queue & rate limiting
+│   │   ├── retryHandler.ts      # Error recovery & retry logic
+│   │   └── sessionManager.ts    # Session persistence
+│   ├── types/                   # TypeScript types
 │   │   └── index.ts
-│   └── index.ts            # Main entry point
-├── examples/               # Usage examples
+│   └── index.ts                 # Main entry point
+├── examples/                    # Usage examples
 │   ├── basic_usage.js
 │   ├── basic_usage.py
 │   └── curl_examples.sh
-├── sessions/               # Session storage (created at runtime)
-├── logs/                   # Log files (created at runtime)
-├── .env.example            # Environment template
-├── Dockerfile              # Docker image
-├── docker-compose.yml      # Docker Compose config
-├── Makefile                # Convenient commands
+├── sessions/                    # Session storage (created at runtime)
+├── logs/                        # Log files (created at runtime)
+├── jest.config.js               # Jest test configuration
+├── .env.example                 # Environment template
+├── Dockerfile                   # Docker image
+├── docker-compose.yml           # Docker Compose config
+├── Makefile                     # Convenient commands
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -473,6 +510,66 @@ ai-router/
 - Be cautious with browser automation credentials
 - Review rate limits to prevent abuse
 - Sessions are stored in `sessions/` directory with 7-day expiry
+
+## Testing
+
+The project includes comprehensive test coverage with 57 tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test anthropic.test.ts
+```
+
+**Test Coverage:**
+- **AnthropicProvider** (52 tests)
+  - Provider initialization and availability
+  - Chat completion (basic, with tools, with images)
+  - Streaming with token tracking
+  - Message formatting (system messages, multi-turn, tool results)
+  - Image handling (JPEG, PNG, GIF, WebP, edge cases)
+  - Tool formatting (OpenAI ↔ Anthropic conversion)
+  - Error handling and edge cases
+
+- **ProviderFactory** (5 tests)
+  - Provider instance caching
+  - Anthropic provider mode selection (native/compatible/auto)
+  - Unknown provider handling
+
+## Anthropic Provider Features
+
+The native Anthropic provider provides:
+
+### Message Handling
+- Automatic extraction of system messages (Anthropic-specific requirement)
+- Support for multi-turn conversations
+- Proper handling of tool result messages
+
+### Vision Support
+- Automatic MIME type detection (JPEG, PNG, GIF, WebP)
+- Base64 encoding of images
+- Multiple images per message
+
+### Tool/Function Calling
+- Automatic conversion from OpenAI tool format to Anthropic
+- Support for tool result messages in multi-turn conversations
+- Proper error handling for invalid tool definitions
+
+### Streaming
+- Real-time token counting
+- Proper usage metrics in stream completion
+- Error handling and recovery
+
+### Configuration
+- Three provider modes:
+  - `native`: Direct Anthropic SDK (recommended)
+  - `compatible`: OpenAI-compatible wrapper
+  - `auto`: Automatic selection (default)
 
 ## Contributing
 
