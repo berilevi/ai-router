@@ -4,6 +4,7 @@ import { GeminiWebProvider } from './geminiWeb';
 import { GeminiApiProvider } from './geminiApi';
 import { OpenAICompatibleProvider } from './openaiCompatible';
 import { AnthropicProvider } from './anthropic';
+import { CopilotProvider } from './copilot';
 import { providerConfigs, anthropicConfig } from '../utils/config';
 import { logger } from '../utils/logger';
 
@@ -47,6 +48,8 @@ export class ProviderFactory {
         return new GeminiWebProvider(config);
       case 'gemini-api':
         return new GeminiApiProvider(config);
+      case 'copilot':
+        return new CopilotProvider(config);
       case 'anthropic':
         return this.createAnthropicProvider(config);
       case 'openai':
@@ -171,5 +174,6 @@ export { GeminiWebProvider } from './geminiWeb';
 export { GeminiApiProvider } from './geminiApi';
 export { OpenAICompatibleProvider } from './openaiCompatible';
 export { AnthropicProvider } from './anthropic';
+export { CopilotProvider } from './copilot';
 
 export default ProviderFactory;

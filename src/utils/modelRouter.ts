@@ -1,5 +1,6 @@
 import { ProviderType, ModelMapping, ProviderConfig, ChatCompletionOptions } from '../types';
 import { providerConfigs, modelMappings, getProviderConfig } from './config';
+import { isCopilotModel, resolveModelAlias, getCopilotModelMapping } from './copilotModelMapping';
 import { logger } from './logger';
 
 interface RouteResult {
@@ -67,7 +68,24 @@ export function routeModel(model: string): RouteResult | null {
       };
     }
   }
-  
+
+  // Check for Copilot-specific models (gpt5, opus, sonnet, etc.)
+  // This should come before general gpt-* routing to ensure these route to Copilot
+  const resolvedModel = resolveModelAlias(model);
+  if (isCopilotModel(resolvedModel)) {
+    const copilotConfig = getProviderConfig('copilot');
+    if (copilotConfig?.enabled) {
+      const copilotMapping = getCopilotModelMapping(resolvedModel);
+      logger.debug(`Routed model "${model}" to ${copilotConfig.name} (Copilot model)`);
+      return {
+        provider: 'copilot',
+        providerModel: copilotMapping?.providerModel || resolvedModel,
+        config: copilotConfig,
+        mapping: copilotMapping,
+      };
+    }
+  }
+
   if (model.startsWith('gpt-') || model.startsWith('chatgpt')) {
     const openaiConfig = getProviderConfig('openai');
     if (openaiConfig?.enabled) {

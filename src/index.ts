@@ -8,10 +8,12 @@ import { configValidator } from './utils/configValidator';
 import { logger, morganStream } from './utils/logger';
 import { ProviderFactory } from './providers';
 import { sessionManager } from './utils/sessionManager';
+import { copilotSessionManager } from './utils/copilotSessionManager';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import apiRoutes from './routes/api';
 import healthRoutes from './routes/health';
 import metricsRoutes from './routes/metrics';
+import anthropicRoutes from './routes/anthropic';
 
 class Server {
   public app: Application;
@@ -142,11 +144,14 @@ class Server {
     // Ollama-compatible API routes
     this.app.use('/api', apiRoutes);
 
+    // Anthropic Messages API routes (for Claude Code compatibility)
+    this.app.use('/v1', anthropicRoutes);
+
     // Root endpoint with API documentation
     this.app.get('/', (_req: Request, res: Response) => {
       res.json({
         name: 'AI Router',
-        description: 'Ollama-compatible API bridge for Gemini and other AI providers',
+        description: 'Multi-provider AI router with Ollama and Anthropic API compatibility',
         version: process.env.npm_package_version || '1.0.0',
         environment: process.env.NODE_ENV || 'development',
         endpoints: {
@@ -155,20 +160,20 @@ class Server {
           'GET /metrics': 'Prometheus metrics',
           'GET /metrics/json': 'JSON metrics',
           'GET /metrics/summary': 'Metrics summary',
-          'GET /api/tags': 'List available models',
-          'POST /api/generate': 'Generate completion',
-          'POST /api/chat': 'Chat completion',
-          'POST /api/embed': 'Generate embeddings',
-          'POST /api/pull': 'Pull a model (no-op)',
-          'POST /api/show': 'Show model info',
-          'DELETE /api/delete': 'Delete a model (no-op)',
+          'GET /api/tags': 'List available models (Ollama API)',
+          'POST /api/generate': 'Generate completion (Ollama API)',
+          'POST /api/chat': 'Chat completion (Ollama API)',
+          'POST /api/embed': 'Generate embeddings (Ollama API)',
+          'POST /v1/messages': 'Create message (Anthropic API)',
+          'GET /v1/models': 'List models (Anthropic API)',
         },
         documentation: 'https://github.com/yourusername/ai-router',
         features: [
-          'Multi-provider support (Gemini Web, Gemini API, OpenAI, Anthropic)',
+          'Multi-provider support (Copilot, Gemini, OpenAI, Anthropic)',
+          'Anthropic Messages API compatibility for Claude Code',
           'Request queue with rate limiting',
-          'Session persistence for browser automation',
-          'True streaming responses',
+          'Session persistence for conversations',
+          'True streaming responses with SSE',
           'Error recovery and retry logic',
           'Comprehensive metrics and monitoring',
         ],
@@ -215,6 +220,8 @@ class Server {
         logger.info(`❤️  Health Check: http://localhost:${serverConfig.port}/health`);
         logger.info(`📊 Metrics: http://localhost:${serverConfig.port}/metrics`);
         logger.info(`🤖 Ollama API: http://localhost:${serverConfig.port}/api`);
+        logger.info(`🔮 Anthropic API: http://localhost:${serverConfig.port}/v1/messages`);
+        logger.info(`📍 Claude Code config: ANTHROPIC_BASE_URL=http://localhost:${serverConfig.port}`);
       });
     } catch (error) {
       logger.error('Failed to start server:', error);
@@ -224,13 +231,16 @@ class Server {
 
   public async stop(): Promise<void> {
     logger.info('Shutting down server...');
-    
+
     // Stop auto-save
     sessionManager.stopAutoSave();
-    
+
+    // Clean up Copilot sessions
+    await copilotSessionManager.cleanupAll();
+
     // Clean up providers
     await ProviderFactory.cleanupAll();
-    
+
     logger.info('Server stopped');
   }
 }

@@ -129,7 +129,7 @@ export interface OllamaEmbedResponse {
 }
 
 // Provider Types
-export type ProviderType = 'gemini-web' | 'gemini-api' | 'openai' | 'anthropic' | 'custom';
+export type ProviderType = 'gemini-web' | 'gemini-api' | 'openai' | 'anthropic' | 'copilot' | 'custom';
 
 export interface ProviderConfig {
   type: ProviderType;
@@ -163,10 +163,12 @@ export interface ChatCompletionOptions {
   messages: ChatCompletionMessage[];
   temperature?: number;
   topP?: number;
+  topK?: number;
   maxTokens?: number;
   stream?: boolean;
   system?: string;
   tools?: unknown[];
+  stopSequences?: string[];
 }
 
 export interface ChatCompletionResponse {
@@ -235,3 +237,6 @@ export class ProviderNotAvailableError extends Error {
     this.name = 'ProviderNotAvailableError';
   }
 }
+
+// Re-export Anthropic types
+export * from './anthropic';

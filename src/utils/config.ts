@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { ServerConfig, ProviderConfig, ModelMapping, ProviderType } from '../types';
 import { logger } from './logger';
+import { copilotConfig, copilotModelMappings } from './copilotModelMapping';
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +20,15 @@ export const serverConfig: ServerConfig = {
 
 // Provider configurations
 export const providerConfigs: ProviderConfig[] = [
+  // Copilot provider (highest priority when enabled)
+  {
+    type: 'copilot',
+    name: 'GitHub Copilot',
+    enabled: copilotConfig.enabled,
+    defaultModel: copilotConfig.defaultModel,
+    priority: 0,  // Highest priority
+    models: ['gpt5', 'gpt-4.1', 'opus', 'sonnet', 'haiku', 'o1', 'o3', 'o3-mini'],
+  },
   {
     type: 'gemini-web',
     name: 'Gemini Web (Puppeteer)',
@@ -79,6 +89,8 @@ export const providerConfigs: ProviderConfig[] = [
 
 // Model mappings from Ollama model names to provider models
 export const modelMappings: ModelMapping[] = [
+  // Copilot models (added from copilotModelMappings)
+  ...copilotModelMappings,
   // Gemini Web models
   {
     ollamaModel: 'gemini',
