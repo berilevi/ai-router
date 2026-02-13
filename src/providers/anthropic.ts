@@ -71,7 +71,12 @@ export class AnthropicProvider extends BaseProvider {
     }
 
     try {
-      const { messages, system } = this.formatMessagesAndSystem(options.messages, options.system);
+      const { messages, system } = this.formatMessagesAndSystem(
+        options.messages,
+        options.system,
+        options.enableCache,
+        options.cacheBreakpoints
+      );
 
       const requestParams: Anthropic.MessageCreateParams = {
         model: options.model,
@@ -79,9 +84,20 @@ export class AnthropicProvider extends BaseProvider {
         messages,
       };
 
-      // Add system message if present
+      // Add system message if present (with caching support)
       if (system) {
-        requestParams.system = system;
+        if (options.enableCache && typeof system === 'string') {
+          // Enable caching for system prompt
+          requestParams.system = [
+            {
+              type: 'text',
+              text: system,
+              cache_control: { type: 'ephemeral' },
+            },
+          ];
+        } else {
+          requestParams.system = system;
+        }
       }
 
       // Add optional parameters
@@ -116,6 +132,9 @@ export class AnthropicProvider extends BaseProvider {
           promptTokens: response.usage.input_tokens,
           completionTokens: response.usage.output_tokens,
           totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+          // Add caching metrics if available
+          cacheCreationInputTokens: (response.usage as { cache_creation_input_tokens?: number }).cache_creation_input_tokens,
+          cacheReadInputTokens: (response.usage as { cache_read_input_tokens?: number }).cache_read_input_tokens,
         },
         toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
       };
@@ -136,7 +155,12 @@ export class AnthropicProvider extends BaseProvider {
     }
 
     try {
-      const { messages, system } = this.formatMessagesAndSystem(options.messages, options.system);
+      const { messages, system } = this.formatMessagesAndSystem(
+        options.messages,
+        options.system,
+        options.enableCache,
+        options.cacheBreakpoints
+      );
 
       const requestParams: Anthropic.MessageCreateParams = {
         model: options.model,
@@ -145,9 +169,20 @@ export class AnthropicProvider extends BaseProvider {
         stream: true,
       };
 
-      // Add system message if present
+      // Add system message if present (with caching support)
       if (system) {
-        requestParams.system = system;
+        if (options.enableCache && typeof system === 'string') {
+          // Enable caching for system prompt
+          requestParams.system = [
+            {
+              type: 'text',
+              text: system,
+              cache_control: { type: 'ephemeral' },
+            },
+          ];
+        } else {
+          requestParams.system = system;
+        }
       }
 
       // Add optional parameters
@@ -165,10 +200,16 @@ export class AnthropicProvider extends BaseProvider {
 
       let inputTokens = 0;
       let outputTokens = 0;
+      let cacheCreationInputTokens = 0;
+      let cacheReadInputTokens = 0;
 
       for await (const event of stream as AsyncIterable<Anthropic.MessageStreamEvent>) {
         if (event.type === 'message_start') {
           inputTokens = event.message.usage?.input_tokens || 0;
+          // Track cache metrics from message_start
+          const usage = event.message.usage as { cache_creation_input_tokens?: number; cache_read_input_tokens?: number };
+          cacheCreationInputTokens = usage?.cache_creation_input_tokens || 0;
+          cacheReadInputTokens = usage?.cache_read_input_tokens || 0;
         } else if (event.type === 'content_block_delta') {
           const delta = event.delta;
           if ('text' in delta) {
@@ -189,6 +230,8 @@ export class AnthropicProvider extends BaseProvider {
           promptTokens: inputTokens,
           completionTokens: outputTokens,
           totalTokens: inputTokens + outputTokens,
+          cacheCreationInputTokens: cacheCreationInputTokens > 0 ? cacheCreationInputTokens : undefined,
+          cacheReadInputTokens: cacheReadInputTokens > 0 ? cacheReadInputTokens : undefined,
         },
       };
     } catch (error) {
@@ -199,16 +242,21 @@ export class AnthropicProvider extends BaseProvider {
   /**
    * Format messages for Anthropic API and extract system message
    * Anthropic requires system message as a separate parameter, not in messages array
+   * Supports prompt caching via cache_control blocks
    */
   private formatMessagesAndSystem(
     messages: ChatCompletionMessage[],
-    systemPrompt?: string
-  ): { messages: Anthropic.MessageParam[]; system?: string } {
+    systemPrompt?: string,
+    enableCache?: boolean,
+    cacheBreakpoints?: number[]
+  ): { messages: Anthropic.MessageParam[]; system?: string | Anthropic.TextBlockParam[] } {
     const formatted: Anthropic.MessageParam[] = [];
     let system = systemPrompt;
 
-    for (const message of messages) {
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
       const extMsg = message as ExtendedChatCompletionMessage;
+      const shouldCache = enableCache && cacheBreakpoints?.includes(i);
 
       if (message.role === 'system') {
         // Accumulate system messages
@@ -218,7 +266,7 @@ export class AnthropicProvider extends BaseProvider {
           system = message.content;
         }
       } else if (message.role === 'user') {
-        const content = this.formatUserContent(message);
+        const content = this.formatUserContent(message, shouldCache);
         formatted.push({
           role: 'user',
           content,
@@ -294,12 +342,23 @@ export class AnthropicProvider extends BaseProvider {
 
   /**
    * Format user message content, including images if present
+   * Supports cache_control for prompt caching
    */
   private formatUserContent(
-    message: ChatCompletionMessage
+    message: ChatCompletionMessage,
+    enableCache?: boolean
   ): string | Anthropic.ContentBlockParam[] {
-    // If no images, return plain text
+    // If no images, return plain text (with optional caching)
     if (!message.images || message.images.length === 0) {
+      if (enableCache) {
+        return [
+          {
+            type: 'text',
+            text: message.content,
+            cache_control: { type: 'ephemeral' },
+          },
+        ];
+      }
       return message.content;
     }
 
@@ -318,12 +377,16 @@ export class AnthropicProvider extends BaseProvider {
       });
     }
 
-    // Add text content
+    // Add text content (with optional caching on last block)
     if (message.content) {
-      content.push({
+      const textBlock: Anthropic.TextBlockParam = {
         type: 'text',
         text: message.content,
-      });
+      };
+      if (enableCache) {
+        textBlock.cache_control = { type: 'ephemeral' };
+      }
+      content.push(textBlock);
     }
 
     return content;
@@ -394,6 +457,118 @@ export class AnthropicProvider extends BaseProvider {
   async listModels(): Promise<string[]> {
     // Anthropic doesn't have a public models list API, return configured models
     return this.config.models;
+  }
+
+  /**
+   * Create a message batch for bulk processing
+   */
+  async createBatch(requests: unknown[]): Promise<unknown> {
+    if (!this.isAvailable()) {
+      throw new Error(`${this.name} provider is not available`);
+    }
+
+    if (!this.client) {
+      await this.initialize();
+    }
+
+    try {
+      logger.info(`Creating batch with ${requests.length} requests`);
+      const batch = await this.client!.beta.messages.batches.create({ requests: requests as never[] });
+      logger.info(`Batch created: ${batch.id}, status: ${batch.processing_status}`);
+      return batch;
+    } catch (error) {
+      this.handleError(error, 'createBatch');
+    }
+  }
+
+  /**
+   * Get batch status and metadata
+   */
+  async getBatch(batchId: string): Promise<unknown> {
+    if (!this.isAvailable()) {
+      throw new Error(`${this.name} provider is not available`);
+    }
+
+    if (!this.client) {
+      await this.initialize();
+    }
+
+    try {
+      logger.debug(`Retrieving batch: ${batchId}`);
+      return await this.client!.beta.messages.batches.retrieve(batchId);
+    } catch (error) {
+      this.handleError(error, 'getBatch');
+    }
+  }
+
+  /**
+   * Get batch results as async iterator
+   */
+  async *getBatchResults(batchId: string): AsyncGenerator<unknown> {
+    if (!this.isAvailable()) {
+      throw new Error(`${this.name} provider is not available`);
+    }
+
+    if (!this.client) {
+      await this.initialize();
+    }
+
+    try {
+      logger.debug(`Retrieving results for batch: ${batchId}`);
+      const decoder = await this.client!.beta.messages.batches.results(batchId);
+
+      for await (const result of decoder) {
+        yield result;
+      }
+    } catch (error) {
+      this.handleError(error, 'getBatchResults');
+    }
+  }
+
+  /**
+   * List batches with pagination
+   */
+  async listBatches(params?: {
+    before?: string;
+    after?: string;
+    limit?: number;
+  }): Promise<unknown> {
+    if (!this.isAvailable()) {
+      throw new Error(`${this.name} provider is not available`);
+    }
+
+    if (!this.client) {
+      await this.initialize();
+    }
+
+    try {
+      logger.debug('Listing batches', params);
+      return await this.client!.beta.messages.batches.list(params);
+    } catch (error) {
+      this.handleError(error, 'listBatches');
+    }
+  }
+
+  /**
+   * Cancel a batch
+   */
+  async cancelBatch(batchId: string): Promise<unknown> {
+    if (!this.isAvailable()) {
+      throw new Error(`${this.name} provider is not available`);
+    }
+
+    if (!this.client) {
+      await this.initialize();
+    }
+
+    try {
+      logger.info(`Cancelling batch: ${batchId}`);
+      const batch = await this.client!.beta.messages.batches.cancel(batchId);
+      logger.info(`Batch cancelled: ${batch.id}, status: ${batch.processing_status}`);
+      return batch;
+    } catch (error) {
+      this.handleError(error, 'cancelBatch');
+    }
   }
 }
 

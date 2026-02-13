@@ -169,6 +169,10 @@ export interface ChatCompletionOptions {
   system?: string;
   tools?: unknown[];
   stopSequences?: string[];
+  // Anthropic-specific: Enable prompt caching
+  enableCache?: boolean;
+  // Anthropic-specific: Cache breakpoints (message indices to cache)
+  cacheBreakpoints?: number[];
 }
 
 export interface ChatCompletionResponse {
@@ -178,6 +182,9 @@ export interface ChatCompletionResponse {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    // Anthropic caching metrics
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
   };
   toolCalls?: unknown[];
 }
@@ -189,6 +196,9 @@ export interface StreamChunk {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    // Anthropic caching metrics
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
   };
 }
 

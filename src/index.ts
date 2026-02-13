@@ -14,6 +14,7 @@ import apiRoutes from './routes/api';
 import healthRoutes from './routes/health';
 import metricsRoutes from './routes/metrics';
 import anthropicRoutes from './routes/anthropic';
+import batchRoutes from './routes/batch';
 
 class Server {
   public app: Application;
@@ -147,6 +148,9 @@ class Server {
     // Anthropic Messages API routes (for Claude Code compatibility)
     this.app.use('/v1', anthropicRoutes);
 
+    // Anthropic Batch API routes
+    this.app.use(batchRoutes);
+
     // Root endpoint with API documentation
     this.app.get('/', (_req: Request, res: Response) => {
       res.json({
@@ -166,6 +170,11 @@ class Server {
           'POST /api/embed': 'Generate embeddings (Ollama API)',
           'POST /v1/messages': 'Create message (Anthropic API)',
           'GET /v1/models': 'List models (Anthropic API)',
+          'POST /v1/messages/batches': 'Create message batch (Anthropic Batch API)',
+          'GET /v1/messages/batches': 'List batches',
+          'GET /v1/messages/batches/:id': 'Get batch status',
+          'GET /v1/messages/batches/:id/results': 'Get batch results',
+          'POST /v1/messages/batches/:id/cancel': 'Cancel batch',
         },
         documentation: 'https://github.com/yourusername/ai-router',
         features: [
