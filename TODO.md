@@ -1,5 +1,40 @@
 # AI Router - TODO & Future Improvements
 
+## 🎯 SDK Feature Utilization Status
+
+### Anthropic SDK (@anthropic-ai/sdk v0.73.0)
+**Currently Using:**
+- ✅ Messages API (chat completions)
+- ✅ Streaming with SSE
+- ✅ Tool use/function calling (manual format conversion)
+- ✅ Vision/images (base64 with MIME detection)
+- ✅ Token counting (`response.usage`)
+- ✅ System messages (native parameter)
+- ✅ Error handling
+
+**Available but NOT Using:**
+- ❌ **Message Batches API** - Bulk processing (see #13 below)
+- ❌ **Prompt Caching** - Cost reduction for repeated prompts (see #14 below)
+- ❌ **Tool Runner Helper** - Automatic tool execution loop (we do manual)
+- ❌ **MCP Integration** - Model Context Protocol helpers (see #15 below)
+- ❌ **Beta Features** - Access to experimental features
+
+### GitHub Copilot SDK (@github/copilot-sdk v0.1.22)
+**Currently Using:**
+- ✅ CopilotClient (basic initialization)
+- ✅ Session management (create/destroy)
+- ✅ Streaming (event-based)
+- ✅ Authentication (GitHub token + gh CLI)
+- ✅ Model discovery (`listModels()`)
+
+**Available but NOT Using:**
+- ❌ **Built-in Tools** - Filesystem, Git, Web operations (see #16 below)
+- ❌ **Agent Runtime** - Production-tested orchestration (see #16 below)
+- ❌ **Custom Tools** - Extensible tool framework
+- ❌ **Tool Configuration** - Enable/disable specific capabilities
+
+---
+
 ## 📋 TODO Items
 
 ### Code Quality
@@ -111,11 +146,13 @@ Add authentication and authorization for the router itself.
 
 ---
 
-### 5. 💾 Caching Layer
+### 5. 💾 Response Caching Layer
 **Priority:** Medium
 **Status:** Not Started
 
 Implement intelligent caching to reduce costs and improve response times.
+
+**Note:** Anthropic SDK has built-in prompt caching support that we could leverage (see #14).
 
 **Tasks:**
 - [ ] Response caching for identical requests
@@ -381,13 +418,20 @@ Add analytics to understand usage patterns.
 
 ## 🎯 Implementation Priority
 
+### Phase 0 (Quick Wins - Leverage Existing SDK Features)
+**Low Effort, High Value - SDK features already available:**
+1. **Anthropic Prompt Caching (#14)** - Very low effort, very high value (90% cost reduction)
+2. **Anthropic Message Batches (#13)** - Low effort, high value for bulk processing
+3. **MCP Integration (#15)** - Medium effort, high value for extensibility
+4. **Copilot Agent Runtime (#16)** - Medium effort, very high value (autonomous workflows)
+
 ### Phase 1 (Critical for Production)
 1. Authentication & Security (#4) - if deploying publicly
 2. Enhanced Monitoring (#3) - for production visibility
 
 ### Phase 2 (Quality & Reliability)
 1. Gemini Web Selector Stability (#1)
-2. Caching Layer (#5)
+2. Response Caching Layer (#5) - complement SDK caching
 3. Testing Improvements (#10)
 
 ### Phase 3 (Developer Experience)
@@ -415,3 +459,170 @@ Add analytics to understand usage patterns.
 **Last Updated:** 2026-02-13
 **Current Version:** 1.0.0
 **Status:** ✅ Feature Complete, Ready for Production
+
+---
+
+## 🚀 SDK-Specific Enhancements (Low Complexity, High Value)
+
+### 13. 📦 Anthropic Message Batches API
+**Priority:** Medium
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in @anthropic-ai/sdk
+
+Leverage Anthropic's built-in batch processing for bulk operations.
+
+**Benefits:**
+- Process multiple requests efficiently
+- Cost optimization for bulk operations
+- Better throughput for batch jobs
+
+**Tasks:**
+- [ ] Add batch endpoint `/api/batch`
+- [ ] Implement batch creation with custom IDs
+- [ ] Add batch result retrieval
+- [ ] Add batch status monitoring
+- [ ] Document batch API usage
+
+**Implementation:**
+```typescript
+await client.messages.batches.create({
+  requests: [
+    { custom_id: 'req-1', params: {...} },
+    { custom_id: 'req-2', params: {...} },
+  ]
+});
+```
+
+**Files:**
+- New: `src/routes/batch.ts`
+- Update: `src/providers/anthropic.ts`
+
+**Effort:** Low (SDK already has it)
+**Value:** High for bulk processing use cases
+
+---
+
+### 14. 💰 Anthropic Prompt Caching
+**Priority:** High
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in @anthropic-ai/sdk
+
+Use Anthropic's built-in prompt caching to reduce costs and latency.
+
+**Benefits:**
+- Up to 90% cost reduction for repeated prompts
+- Faster response times
+- Automatic cache management by Anthropic
+
+**Tasks:**
+- [ ] Add cache control blocks to system messages
+- [ ] Implement cache breakpoint detection
+- [ ] Add cache metrics tracking
+- [ ] Document caching best practices
+- [ ] Add cache configuration options
+
+**Implementation:**
+```typescript
+// Anthropic automatically caches with special markers
+messages: [
+  {
+    role: "user",
+    content: [
+      { type: "text", text: longContext, cache_control: { type: "ephemeral" } }
+    ]
+  }
+]
+```
+
+**Files:**
+- Update: `src/providers/anthropic.ts`
+- Update: `src/utils/metrics.ts`
+
+**Effort:** Very Low (just enable it)
+**Value:** Very High (cost savings)
+
+---
+
+### 15. 🔌 MCP (Model Context Protocol) Integration
+**Priority:** Low
+**Status:** Not Started
+**SDK Support:** ✅ Helper Functions in @anthropic-ai/sdk
+
+Integrate with Model Context Protocol for extensible tool support.
+
+**Benefits:**
+- Standardized tool integration
+- Rich ecosystem of MCP servers
+- Better tool interoperability
+
+**Tasks:**
+- [ ] Add MCP server connection support
+- [ ] Implement `mcpTools()` helper integration
+- [ ] Add `mcpMessages()` conversion
+- [ ] Support MCP resources
+- [ ] Document MCP configuration
+
+**Implementation:**
+```typescript
+import { mcpTools } from '@anthropic-ai/sdk/helpers/beta/mcp';
+
+const { tools } = await mcpClient.listTools();
+await client.beta.messages.toolRunner({
+  tools: mcpTools(tools, mcpClient),
+  ...
+});
+```
+
+**Files:**
+- New: `src/utils/mcpIntegration.ts`
+- Update: `src/providers/anthropic.ts`
+
+**Effort:** Medium
+**Value:** High for extensibility
+
+---
+
+### 16. 🤖 GitHub Copilot Agent Runtime
+**Priority:** Medium
+**Status:** Not Started
+**SDK Support:** ✅ Built-in Agent Runtime
+
+Leverage Copilot SDK's built-in agent capabilities for autonomous workflows.
+
+**Benefits:**
+- Production-tested agent orchestration
+- Built-in tools (filesystem, git, web)
+- Automatic planning and execution
+- No manual tool loop management
+
+**Current Limitation:** We only use basic chat, not leveraging agent capabilities.
+
+**Tasks:**
+- [ ] Expose agent creation endpoint
+- [ ] Enable built-in tools (filesystem, git, web)
+- [ ] Add custom tool registration
+- [ ] Implement agent session management
+- [ ] Add agent configuration options
+
+**Implementation:**
+```typescript
+// Currently: Basic chat only
+const session = await client.createSession({model, streaming});
+
+// Could be: Full agent with tools
+const agent = new Agent({
+  tools: [fileSystemTool, gitTool, webTool, customTool],
+  model: 'gpt-4.1',
+});
+```
+
+**Files:**
+- New: `src/routes/agents.ts`
+- Update: `src/providers/copilot.ts`
+- New: `src/utils/copilotTools.ts`
+
+**Effort:** Medium
+**Value:** Very High (autonomous capabilities)
+
+---
+
