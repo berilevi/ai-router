@@ -29,8 +29,7 @@ A powerful Ollama-compatible API bridge that allows you to use Google Gemini (vi
 | Gemini Web | Browser Automation | Google Account | gemini, gemini-pro, gemini-ultra | ✓ |
 | Gemini API | Official API | API Key | gemini-1.5-flash, gemini-1.5-pro, etc. | ✓ |
 | OpenAI | API | API Key | gpt-4o, gpt-4o-mini, gpt-4, gpt-3.5-turbo | ✓ |
-| **Anthropic (Native)** | **Native SDK** | **API Key** | **claude-3-5-sonnet, claude-3-opus, etc.** | **✓ NEW** |
-| Anthropic (Compatible) | OpenAI-compatible wrapper | API Key | claude-3-5-sonnet, claude-3-opus, etc. | ✓ Fallback |
+| **Anthropic** | **Native SDK** | **API Key** | **claude-3-5-sonnet, claude-3-opus, etc.** | **✓** |
 | Custom | OpenAI-compatible | API Key | Configurable | ✓ |
 
 ## Quick Start
@@ -82,17 +81,11 @@ OPENAI_API_KEY=your-openai-api-key
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_DEFAULT_MODEL=gpt-4o-mini
 
-# Anthropic (Native Provider with fallback to OpenAI-compatible)
+# Anthropic (Native SDK)
 ANTHROPIC_API_KEY=your-anthropic-key
-ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
+# Optional: Custom base URL (defaults to https://api.anthropic.com)
+ANTHROPIC_BASE_URL=
 ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
-
-# Anthropic Provider Mode (NEW)
-# Options: native (recommended), compatible (OpenAI wrapper), auto (default)
-# - native: Use Anthropic SDK directly for best compatibility
-# - compatible: Use OpenAI-compatible wrapper
-# - auto: Use native SDK
-ANTHROPIC_PROVIDER_MODE=auto
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=60000
@@ -281,10 +274,10 @@ OPENAI_DEFAULT_MODEL=gpt-4o-mini
 
 ### Anthropic Provider (Native)
 
-**NEW**: The Anthropic provider now uses the official `@anthropic-ai/sdk` for native integration with automatic fallback to OpenAI-compatible mode if configured.
+The Anthropic provider uses the official `@anthropic-ai/sdk` for native integration with Anthropic's API.
 
 **Features:**
-- Native integration with Anthropic's API
+- Native integration with Anthropic's Messages API
 - Automatic system message handling (Anthropic-specific format)
 - Vision/image support with automatic MIME type detection
 - Tool/function calling with format conversion from OpenAI to Anthropic
@@ -294,13 +287,9 @@ OPENAI_DEFAULT_MODEL=gpt-4o-mini
 ```env
 ANTHROPIC_API_KEY=your-anthropic-key
 ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
-
-# Provider mode: native, compatible, or auto (recommended)
-ANTHROPIC_PROVIDER_MODE=auto
+# Optional: Custom base URL (defaults to https://api.anthropic.com)
+ANTHROPIC_BASE_URL=
 ```
-
-**Mode Selection:**
-- `native`: Always use Anthropic SDK directly (recommended for best compatibility)
 - `compatible`: Always use OpenAI-compatible wrapper
 - `auto`: Use native SDK (default, most flexible)
 
@@ -538,7 +527,7 @@ npm test anthropic.test.ts
 
 - **ProviderFactory** (5 tests)
   - Provider instance caching
-  - Anthropic provider mode selection (native/compatible/auto)
+  - Provider initialization and availability
   - Unknown provider handling
 
 ## Anthropic Provider Features
@@ -564,11 +553,6 @@ The native Anthropic provider provides:
 - Real-time token counting
 - Proper usage metrics in stream completion
 - Error handling and recovery
-
-### Configuration
-- Three provider modes:
-  - `native`: Direct Anthropic SDK (recommended)
-  - `compatible`: OpenAI-compatible wrapper
   - `auto`: Automatic selection (default)
 
 ## Contributing

@@ -5,7 +5,7 @@ import { GeminiApiProvider } from './geminiApi';
 import { OpenAICompatibleProvider } from './openaiCompatible';
 import { AnthropicProvider } from './anthropic';
 import { CopilotProvider } from './copilot';
-import { providerConfigs, anthropicConfig } from '../utils/config';
+import { providerConfigs } from '../utils/config';
 import { logger } from '../utils/logger';
 
 /**
@@ -51,7 +51,8 @@ export class ProviderFactory {
       case 'copilot':
         return new CopilotProvider(config);
       case 'anthropic':
-        return this.createAnthropicProvider(config);
+        // Always use native Anthropic SDK
+        return new AnthropicProvider(config);
       case 'openai':
       case 'custom':
         return new OpenAICompatibleProvider(config);
@@ -146,25 +147,6 @@ export class ProviderFactory {
       await provider.cleanup();
     }
     this.instances.delete(type);
-  }
-
-  /**
-   * Create Anthropic provider with fallback logic based on ANTHROPIC_PROVIDER_MODE
-   * - native: Always use native Anthropic SDK
-   * - compatible: Always use OpenAI-compatible wrapper
-   * - auto (default): Use native provider
-   */
-  private static createAnthropicProvider(config: ProviderConfig): BaseProvider {
-    const mode = anthropicConfig.providerMode;
-
-    if (mode === 'compatible') {
-      logger.info('Anthropic provider mode: compatible (OpenAI wrapper)');
-      return new OpenAICompatibleProvider(config);
-    }
-
-    // For 'native' and 'auto' modes, use native provider
-    logger.info(`Anthropic provider mode: ${mode} (native SDK)`);
-    return new AnthropicProvider(config);
   }
 }
 

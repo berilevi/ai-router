@@ -74,7 +74,8 @@ export const providerConfigs: ProviderConfig[] = [
     type: 'anthropic',
     name: 'Anthropic',
     apiKey: process.env.ANTHROPIC_API_KEY,
-    baseUrl: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1',
+    // baseUrl is optional for native Anthropic SDK (defaults to https://api.anthropic.com)
+    baseUrl: process.env.ANTHROPIC_BASE_URL,
     enabled: !!process.env.ANTHROPIC_API_KEY,
     defaultModel: process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-3-5-sonnet-20241022',
     priority: 4,
@@ -219,24 +220,10 @@ export const geminiWebConfig = {
 };
 
 // Anthropic provider configuration
-const validProviderModes = ['native', 'compatible', 'auto'] as const;
-type AnthropicProviderMode = typeof validProviderModes[number];
-
-function parseProviderMode(mode: string | undefined): AnthropicProviderMode {
-  const normalized = (mode || 'auto').toLowerCase().trim();
-  if (validProviderModes.includes(normalized as AnthropicProviderMode)) {
-    return normalized as AnthropicProviderMode;
-  }
-  logger.warn(`Invalid ANTHROPIC_PROVIDER_MODE "${mode}", falling back to "auto"`);
-  return 'auto';
-}
-
+// Note: Now uses native Anthropic SDK exclusively for better compatibility
 export const anthropicConfig = {
-  // Provider mode: 'native', 'compatible', or 'auto' (default)
-  // - native: Always use Anthropic SDK directly
-  // - compatible: Always use OpenAI-compatible wrapper
-  // - auto: Use native SDK (recommended)
-  providerMode: parseProviderMode(process.env.ANTHROPIC_PROVIDER_MODE),
+  // Always use native Anthropic SDK (OpenAI-compatible mode removed)
+  providerMode: 'native' as const,
 };
 
 // Get provider config by type

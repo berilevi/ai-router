@@ -134,8 +134,9 @@ Models are routed to providers based on:
 - Rate limited: 5 concurrent, 60/min, 1000/hour
 
 ### OpenAI / Anthropic
-- Uses `openai` SDK with configurable base URL
-- Supports embeddings via `text-embedding-3-small`
+- Uses `openai` SDK with configurable base URL (OpenAI only)
+- Anthropic uses native `@anthropic-ai/sdk` for direct API integration
+- Supports embeddings via `text-embedding-3-small` (OpenAI)
 - Rate limited: 5 concurrent (OpenAI), 3 concurrent (Anthropic)
 
 ---
@@ -168,12 +169,16 @@ Models are routed to providers based on:
    - Added new `src/utils/imageValidator.ts` with comprehensive image validation
    - Added validation in `/api/generate` and `/api/chat` endpoints
 
+7. **Anthropic provider uses native SDK** ✅ FIXED (Issue #8)
+   - Removed OpenAI-compatible wrapper for Anthropic
+   - Now uses native `@anthropic-ai/sdk` exclusively
+   - Updated configuration to remove `ANTHROPIC_PROVIDER_MODE` environment variable
+   - Simplified provider factory to always use native Anthropic provider
+   - Updated documentation (README.md and .env.example) to reflect native-only implementation
+
 ### Remaining Issues
 
-7. **No test files exist despite Jest configuration**
-
-8. **Anthropic provider uses OpenAI-compatible mode only**
-    - Should support native Anthropic API for better compatibility
+None currently identified.
 
 ---
 
@@ -212,6 +217,7 @@ OPENAI_DEFAULT_MODEL=gpt-4o-mini
 
 # Anthropic
 ANTHROPIC_API_KEY=
+# Optional: Custom base URL (defaults to https://api.anthropic.com)
 ANTHROPIC_BASE_URL=
 ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
 
@@ -256,7 +262,6 @@ docker run -p 11434:11434 --env-file .env ai-router
 - Zod validation for configuration
 
 ### Areas for Improvement
-- Missing unit tests
 - Native Anthropic API support (currently uses OpenAI-compatible mode)
 - Gemini Web DOM selectors may become outdated as Google updates the UI
 
@@ -271,6 +276,7 @@ docker run -p 11434:11434 --env-file .env ai-router
 4. Fixed Anthropic configuration to not require explicit base URL
 5. Added native system instruction support for Gemini API
 6. Added image validation utility and integrated into API routes
+7. **Implemented native Anthropic SDK** - Removed OpenAI wrapper, now uses `@anthropic-ai/sdk` exclusively
 
 ### TypeScript Fixes
 - Updated `PuppeteerLaunchOptions` import in `geminiWeb.ts`
