@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { ServerConfig, ProviderConfig, ModelMapping, ProviderType } from '../types';
 import { logger } from './logger';
 import { copilotConfig, copilotModelMappings } from './copilotModelMapping';
+import type { CacheConfig } from './cache';
 
 // Load environment variables
 dotenv.config();
@@ -16,6 +17,15 @@ export const serverConfig: ServerConfig = {
   requestTimeout: parseInt(process.env.REQUEST_TIMEOUT || '300000', 10),
   streamChunkSize: parseInt(process.env.STREAM_CHUNK_SIZE || '1024', 10),
   streamDelayMs: parseInt(process.env.STREAM_DELAY_MS || '10', 10),
+};
+
+// Cache configuration
+export const cacheConfig: CacheConfig = {
+  enabled: process.env.CACHE_ENABLED !== 'false',
+  ttlMs: parseInt(process.env.CACHE_TTL_MS || '3600000', 10), // 1 hour
+  maxSizeBytes: parseInt(process.env.CACHE_MAX_SIZE_BYTES || String(100 * 1024 * 1024), 10), // 100MB
+  maxEntries: parseInt(process.env.CACHE_MAX_ENTRIES || '1000', 10),
+  strategy: (process.env.CACHE_STRATEGY as 'lru' | 'fifo') || 'lru',
 };
 
 // Provider configurations

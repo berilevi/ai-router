@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { metricsCollector } from '../utils/metrics';
 import { requestQueue } from '../utils/requestQueue';
+import { getCache } from '../utils/cache';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -11,9 +12,37 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const metrics = metricsCollector.getPrometheusMetrics();
-    
+    const cacheStats = getCache().getStats();
+
+    // Add cache metrics to Prometheus output
+    const cacheMetrics = `
+# HELP cache_hits_total Total number of cache hits
+# TYPE cache_hits_total counter
+cache_hits_total ${cacheStats.hits}
+
+# HELP cache_misses_total Total number of cache misses
+# TYPE cache_misses_total counter
+cache_misses_total ${cacheStats.misses}
+
+# HELP cache_hit_rate Current cache hit rate percentage
+# TYPE cache_hit_rate gauge
+cache_hit_rate ${cacheStats.hitRate}
+
+# HELP cache_size_bytes Current cache size in bytes
+# TYPE cache_size_bytes gauge
+cache_size_bytes ${cacheStats.size}
+
+# HELP cache_entries Number of cached entries
+# TYPE cache_entries gauge
+cache_entries ${cacheStats.entries}
+
+# HELP cache_avg_entry_size_bytes Average entry size in bytes
+# TYPE cache_avg_entry_size_bytes gauge
+cache_avg_entry_size_bytes ${cacheStats.averageEntrySize}
+`;
+
     res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
-    res.send(metrics);
+    res.send(metrics + cacheMetrics);
   } catch (error) {
     logger.error('Error generating Prometheus metrics:', error);
     res.status(500).json({ error: 'Failed to generate metrics' });
@@ -26,13 +55,21 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/json', async (_req: Request, res: Response) => {
   try {
     const metrics = metricsCollector.getJSONMetrics();
-    
+
     // Add queue metrics
     const queueMetrics = requestQueue.getMetrics();
-    
+
+    // Add cache metrics
+    const cacheStats = getCache().getStats();
+    const costSavings = getCache().calculateCostSavings();
+
     res.json({
       ...metrics,
       queues: queueMetrics,
+      cache: {
+        ...cacheStats,
+        estimatedCostSavingsUSD: Math.round(costSavings * 10000) / 10000,
+      },
     });
   } catch (error) {
     logger.error('Error generating JSON metrics:', error);

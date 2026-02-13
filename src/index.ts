@@ -3,13 +3,15 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import { serverConfig } from './utils/config';
+import { serverConfig, cacheConfig } from './utils/config';
 import { configValidator } from './utils/configValidator';
 import { logger, morganStream } from './utils/logger';
 import { ProviderFactory } from './providers';
 import { sessionManager } from './utils/sessionManager';
 import { copilotSessionManager } from './utils/copilotSessionManager';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { cacheMiddleware, cacheStatsMiddleware } from './middleware/cacheMiddleware';
+import { initializeCache } from './utils/cache';
 import apiRoutes from './routes/api';
 import healthRoutes from './routes/health';
 import metricsRoutes from './routes/metrics';
@@ -126,6 +128,13 @@ class Server {
 
     // Request logging
     this.app.use(morgan('combined', { stream: morganStream }));
+
+    // Initialize response cache
+    initializeCache(cacheConfig);
+
+    // Cache middleware (must be before routes)
+    this.app.use(cacheMiddleware);
+    this.app.use(cacheStatsMiddleware);
 
     // Add request ID for tracing
     this.app.use((req: Request, res: Response, next: NextFunction) => {
