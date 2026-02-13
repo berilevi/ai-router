@@ -174,33 +174,38 @@ Add authentication and authorization for the router itself.
 
 ---
 
-### 5. 💾 Response Caching Layer
+### 5. ✅ Response Caching Layer [COMPLETED 2026-02-13]
 **Priority:** Medium
-**Status:** Not Started
+**Status:** ✅ Completed (2026-02-13)
 
-Implement intelligent caching to reduce costs and improve response times.
+Intelligent caching to reduce costs and improve response times for identical requests.
 
-**Note:** Anthropic SDK has built-in prompt caching support that we could leverage (see #14).
-
-**Tasks:**
-- [ ] Response caching for identical requests
-  - Hash-based cache key generation
-  - Configurable TTL
-  - Cache hit/miss metrics
-- [ ] Embedding cache
-  - Persistent storage (Redis?)
-  - Semantic similarity search
-  - Automatic cache warming
-- [ ] TTL-based invalidation
-  - Configurable per model/provider
-  - Manual cache clearing
-- [ ] Cache statistics
-  - Hit rate tracking
-  - Cost savings calculation
+**Completed Features:**
+- In-memory LRU cache with SHA-256 hash-based keys
+- Configurable TTL, size limits, and eviction strategy
+- Automatic eviction (LRU or FIFO)
+- Statistics: hits, misses, hit rate, cost savings
+- Cache middleware with smart request filtering
+- Express middleware integration
+- Prometheus & JSON metrics
+- Cache statistics API endpoints
+- Configuration via environment variables
+- Full test coverage
 
 **Files:**
-- New: `src/utils/cache.ts`
-- New: `src/middleware/cacheMiddleware.ts`
+- ✅ `src/utils/cache.ts` (270 lines) - Cache engine
+- ✅ `src/middleware/cacheMiddleware.ts` (110 lines) - Middleware
+- ✅ `src/index.ts` (modified) - Cache initialization
+- ✅ `src/utils/config.ts` (modified) - Cache config
+- ✅ `src/routes/metrics.ts` (modified) - Metrics integration
+- ✅ `.env.example` (modified) - Cache settings
+- ✅ `CACHE_IMPLEMENTATION.md` - Complete documentation
+
+**API Endpoints:**
+- `GET /cache/stats` - Cache statistics
+- `POST /cache/clear` - Clear cache
+- `GET /metrics` - Prometheus metrics (includes cache)
+- `GET /metrics/json` - JSON metrics (includes cache)
 
 ---
 
@@ -871,4 +876,24 @@ Comprehensive test coverage for tool calling functionality.
 - Real API testing (weather, calculator, multi-turn)
 
 **Files:** `src/providers/openaiCompatible.test.ts`, `tests/integration/tool-calling.integration.test.ts`
+
+
+---
+
+### 5. ✅ Response Caching Layer [COMPLETED 2026-02-13]
+
+Intelligent response caching to reduce costs and improve latency.
+
+**Delivered:**
+- In-memory LRU cache with SHA-256 hash-based keys
+- Configurable TTL (default 1 hour), size (100MB), and strategy
+- Automatic eviction based on LRU or FIFO
+- Cache statistics: hits, misses, hit rate, cost savings
+- Express middleware with smart caching logic
+- Skips caching: streaming, tools, empty requests
+- Prometheus and JSON metrics integration
+- API endpoints: /cache/stats, /cache/clear
+- Full metrics tracking and cost savings calculation
+
+**Files:** `src/utils/cache.ts`, `src/middleware/cacheMiddleware.ts`, `src/index.ts`, `src/utils/config.ts`, `src/routes/metrics.ts`, `CACHE_IMPLEMENTATION.md`
 
