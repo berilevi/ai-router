@@ -57,7 +57,7 @@ const openaiConfigSchema = z.object({
 const anthropicConfigSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(10).optional().or(z.literal('')),
   ANTHROPIC_BASE_URL: z.string().url().default('https://api.anthropic.com/v1'),
-  ANTHROPIC_DEFAULT_MODEL: z.string().min(1).default('claude-3-5-sonnet-20241022'),
+  ANTHROPIC_DEFAULT_MODEL: z.string().min(1).default('claude-sonnet-4-5-20250929'),
 });
 
 // Combined environment schema

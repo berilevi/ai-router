@@ -160,6 +160,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 - Integration tests require `RUN_INTEGRATION_TESTS=1` env var
 - API key is in `.env` file
 - Tests use cheapest model (Haiku 4.5) to minimize costs
+- Document updates use the cheapest model (Haiku 4.5) to minimize costs
 - All Anthropic integration tests passing successfully
 - OpenAI tests need valid API key to run
 - TODO.md is now cleaner with completed items in archive section

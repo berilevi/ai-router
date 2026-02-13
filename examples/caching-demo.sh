@@ -13,7 +13,7 @@ echo "1. First request (creates cache):"
 curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5-20250929",
     "enableCache": true,
     "system": "You are a helpful AI assistant with extensive knowledge of quantum computing, particle physics, and advanced mathematics. Your responses should be detailed, accurate, and pedagogical.",
     "messages": [
@@ -31,7 +31,7 @@ echo "2. Second request with same system prompt (reads from cache):"
 curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5-20250929",
     "enableCache": true,
     "system": "You are a helpful AI assistant with extensive knowledge of quantum computing, particle physics, and advanced mathematics. Your responses should be detailed, accurate, and pedagogical.",
     "messages": [
@@ -48,7 +48,7 @@ echo "3. Document Q&A with strategic caching:"
 curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5-20250929",
     "enableCache": true,
     "cacheBreakpoints": [0],
     "messages": [

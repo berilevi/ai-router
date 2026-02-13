@@ -56,7 +56,7 @@ curl -X POST http://localhost:11434/v1/messages/batches \
       {
         "custom_id": "request-1",
         "params": {
-          "model": "claude-3-5-sonnet-20241022",
+          "model": "claude-sonnet-4-5-20250929",
           "max_tokens": 1024,
           "messages": [
             {"role": "user", "content": "Analyze this data: ..."}
@@ -66,7 +66,7 @@ curl -X POST http://localhost:11434/v1/messages/batches \
       {
         "custom_id": "request-2",
         "params": {
-          "model": "claude-3-5-sonnet-20241022",
+          "model": "claude-sonnet-4-5-20250929",
           "max_tokens": 1024,
           "messages": [
             {"role": "user", "content": "Summarize this document: ..."}
@@ -126,8 +126,8 @@ curl http://localhost:11434/v1/messages/batches/msgbatch_01ABC123/results
 
 Results are returned as JSON Lines (JSONL):
 ```jsonl
-{"custom_id":"request-1","result":{"type":"succeeded","message":{"id":"msg_123","type":"message","role":"assistant","content":[{"type":"text","text":"Analysis results..."}],"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":100,"output_tokens":200}}}}
-{"custom_id":"request-2","result":{"type":"succeeded","message":{"id":"msg_456","type":"message","role":"assistant","content":[{"type":"text","text":"Summary..."}],"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":150,"output_tokens":100}}}}
+{"custom_id":"request-1","result":{"type":"succeeded","message":{"id":"msg_123","type":"message","role":"assistant","content":[{"type":"text","text":"Analysis results..."}],"model":"claude-sonnet-4-5-20250929","usage":{"input_tokens":100,"output_tokens":200}}}}
+{"custom_id":"request-2","result":{"type":"succeeded","message":{"id":"msg_456","type":"message","role":"assistant","content":[{"type":"text","text":"Summary..."}],"model":"claude-sonnet-4-5-20250929","usage":{"input_tokens":150,"output_tokens":100}}}}
 ```
 
 ### 4. List All Batches
@@ -173,7 +173,7 @@ Each batch tracks the status of individual requests:
 const requests = reviews.map((review, i) => ({
   custom_id: `review-${i}`,
   params: {
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 500,
     messages: [{
       role: "user",
@@ -199,7 +199,7 @@ const batch = {
   requests: documents.map((doc, i) => ({
     custom_id: `doc-${doc.id}`,
     params: {
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 2000,
       messages: [{
         role: "user",
@@ -217,7 +217,7 @@ const batch = {
 const enrichRequests = products.map(product => ({
   custom_id: `product-${product.sku}`,
   params: {
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 1000,
     messages: [{
       role: "user",

@@ -125,7 +125,7 @@ Once Anthropic is configured:
 curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5-20250929",
     "enableCache": true,
     "system": "Your long system prompt here...",
     "messages": [
@@ -144,7 +144,7 @@ curl -X POST http://localhost:5000/v1/messages/batches \
       {
         "custom_id": "task-1",
         "params": {
-          "model": "claude-3-5-sonnet-20241022",
+          "model": "claude-sonnet-4-5-20250929",
           "max_tokens": 1024,
           "messages": [{"role": "user", "content": "..."}]
         }

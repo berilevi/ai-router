@@ -15,9 +15,9 @@ jest.mock('../utils/config', () => ({
       apiKey: 'test-key',
       baseUrl: 'https://api.anthropic.com/v1',
       enabled: true,
-      defaultModel: 'claude-3-5-sonnet-20241022',
+      defaultModel: 'claude-sonnet-4-5-20250929',
       priority: 4,
-      models: ['claude-3-5-sonnet-20241022'],
+      models: ['claude-sonnet-4-5-20250929'],
     },
   ],
   anthropicConfig: {
@@ -85,9 +85,9 @@ describe('ProviderFactory with compatible mode', () => {
           apiKey: 'test-key',
           baseUrl: 'https://api.anthropic.com/v1',
           enabled: true,
-          defaultModel: 'claude-3-5-sonnet-20241022',
+          defaultModel: 'claude-sonnet-4-5-20250929',
           priority: 4,
-          models: ['claude-3-5-sonnet-20241022'],
+          models: ['claude-sonnet-4-5-20250929'],
         },
       ],
       anthropicConfig: {

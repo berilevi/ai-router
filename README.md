@@ -85,7 +85,7 @@ OPENAI_DEFAULT_MODEL=gpt-4o-mini
 ANTHROPIC_API_KEY=your-anthropic-key
 # Optional: Custom base URL (defaults to https://api.anthropic.com)
 ANTHROPIC_BASE_URL=
-ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_DEFAULT_MODEL=claude-sonnet-4-5-20250929
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=60000
@@ -199,8 +199,8 @@ The bridge maps Ollama-style model names to provider-specific models:
 | `gemini-1.5-pro` | Gemini API | gemini-1.5-pro-latest |
 | `gpt-4o` | OpenAI | gpt-4o |
 | `gpt-4o-mini` | OpenAI | gpt-4o-mini |
-| `claude` | Anthropic | claude-3-5-sonnet-20241022 |
-| `claude-sonnet` | Anthropic | claude-3-5-sonnet-20241022 |
+| `claude` | Anthropic | claude-sonnet-4-5-20250929 |
+| `claude-sonnet` | Anthropic | claude-sonnet-4-5-20250929 |
 
 ## API Endpoints
 
@@ -286,7 +286,7 @@ The Anthropic provider uses the official `@anthropic-ai/sdk` for native integrat
 **Configuration:**
 ```env
 ANTHROPIC_API_KEY=your-anthropic-key
-ANTHROPIC_DEFAULT_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_DEFAULT_MODEL=claude-sonnet-4-5-20250929
 # Optional: Custom base URL (defaults to https://api.anthropic.com)
 ANTHROPIC_BASE_URL=
 ```

@@ -82,8 +82,8 @@ export const providerConfigs: ProviderConfig[] = [
     models: [
       'claude-sonnet-4-5-20250929',
       'claude-haiku-4.5',
-      'claude-3-5-sonnet-20241022',
-      'claude-3-opus-20240229',
+      'claude-sonnet-4-5-20250929',
+      'claude-opus-4-5-20250604',
       'claude-3-sonnet-20240229',
       'claude-3-haiku-20240307',
     ],
@@ -205,7 +205,7 @@ export const modelMappings: ModelMapping[] = [
   {
     ollamaModel: 'claude-opus',
     provider: 'anthropic',
-    providerModel: 'claude-3-opus-20240229',
+    providerModel: 'claude-opus-4-5-20250604',
     supportsImages: true,
     supportsTools: true,
     contextWindow: 200000,

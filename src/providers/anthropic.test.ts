@@ -19,9 +19,9 @@ describe('AnthropicProvider', () => {
       apiKey: 'test-api-key',
       baseUrl: 'https://api.anthropic.com/v1',
       enabled: true,
-      defaultModel: 'claude-3-5-sonnet-20241022',
+      defaultModel: 'claude-sonnet-4-5-20250929',
       priority: 4,
-      models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229'],
+      models: ['claude-sonnet-4-5-20250929', 'claude-opus-4-5-20250604'],
     };
 
     // Create mock client
@@ -98,7 +98,7 @@ describe('AnthropicProvider', () => {
 
     const mockResponse = {
       content: [{ type: 'text', text: 'Hello! How can I help you?' }],
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250929',
       usage: { input_tokens: 10, output_tokens: 20 },
     };
 
@@ -109,14 +109,14 @@ describe('AnthropicProvider', () => {
 
     it('should make basic chat completion request', async () => {
       const options: ChatCompletionOptions = {
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: basicMessages,
       };
 
       const result = await provider.chatCompletion(options);
 
       expect(result.content).toBe('Hello! How can I help you?');
-      expect(result.model).toBe('claude-3-5-sonnet-20241022');
+      expect(result.model).toBe('claude-sonnet-4-5-20250929');
       expect(result.usage).toEqual({
         promptTokens: 10,
         completionTokens: 20,
@@ -135,7 +135,7 @@ describe('AnthropicProvider', () => {
 
     it('should throw error when messages array is empty', async () => {
       const options: ChatCompletionOptions = {
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [],
       };
 
@@ -147,14 +147,14 @@ describe('AnthropicProvider', () => {
       const disabledProvider = new AnthropicProvider(disabledConfig);
 
       await expect(disabledProvider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: basicMessages,
       })).rejects.toThrow('not available');
     });
 
     it('should include optional parameters when provided', async () => {
       const options: ChatCompletionOptions = {
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: basicMessages,
         temperature: 0.7,
         topP: 0.9,
@@ -174,7 +174,7 @@ describe('AnthropicProvider', () => {
 
     it('should use default max_tokens of 4096 when not provided', async () => {
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: basicMessages,
       });
 
@@ -196,13 +196,13 @@ describe('AnthropicProvider', () => {
             input: { query: 'weather' },
           },
         ],
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         usage: { input_tokens: 10, output_tokens: 30 },
       };
       (mockAnthropicClient.messages.create as jest.Mock).mockResolvedValue(toolUseResponse);
 
       const result = await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: basicMessages,
       });
 
@@ -225,7 +225,7 @@ describe('AnthropicProvider', () => {
       createMock = mockAnthropicClient.messages.create as jest.Mock;
       createMock.mockResolvedValue({
         content: [{ type: 'text', text: 'Response' }],
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         usage: { input_tokens: 10, output_tokens: 20 },
       });
     });
@@ -237,7 +237,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -255,7 +255,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
         system: 'Be concise.',
       });
@@ -275,7 +275,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -293,7 +293,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
         system: 'You are an AI assistant.',
       });
@@ -313,7 +313,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -334,7 +334,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -352,7 +352,7 @@ describe('AnthropicProvider', () => {
       ] as unknown as ChatCompletionMessage[];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -389,7 +389,7 @@ describe('AnthropicProvider', () => {
       ] as unknown as ChatCompletionMessage[];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -428,7 +428,7 @@ describe('AnthropicProvider', () => {
       ] as unknown as ChatCompletionMessage[];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -455,7 +455,7 @@ describe('AnthropicProvider', () => {
       ] as unknown as ChatCompletionMessage[];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -483,7 +483,7 @@ describe('AnthropicProvider', () => {
       createMock = mockAnthropicClient.messages.create as jest.Mock;
       createMock.mockResolvedValue({
         content: [{ type: 'text', text: 'I see an image' }],
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         usage: { input_tokens: 100, output_tokens: 20 },
       });
     });
@@ -497,7 +497,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -524,7 +524,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -541,7 +541,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -558,7 +558,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -575,7 +575,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -592,7 +592,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -609,7 +609,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -626,7 +626,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -643,7 +643,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -659,7 +659,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -678,7 +678,7 @@ describe('AnthropicProvider', () => {
       createMock = mockAnthropicClient.messages.create as jest.Mock;
       createMock.mockResolvedValue({
         content: [{ type: 'text', text: 'Response' }],
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         usage: { input_tokens: 10, output_tokens: 20 },
       });
     });
@@ -702,7 +702,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'What is the weather?' }],
         tools,
       });
@@ -741,7 +741,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Search for something' }],
         tools,
       });
@@ -776,7 +776,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Use the tool' }],
         tools,
       });
@@ -806,7 +806,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Use the tool' }],
         tools,
       });
@@ -826,7 +826,7 @@ describe('AnthropicProvider', () => {
 
     it('should not include tools when empty array', async () => {
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'No tools' }],
         tools: [],
       });
@@ -861,7 +861,7 @@ describe('AnthropicProvider', () => {
 
       const chunks: { content: string; done: boolean }[] = [];
       for await (const chunk of provider.chatCompletionStream({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
       })) {
         chunks.push(chunk);
@@ -882,7 +882,7 @@ describe('AnthropicProvider', () => {
       const disabledProvider = new AnthropicProvider(disabledConfig);
 
       const generator = disabledProvider.chatCompletionStream({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
       });
 
@@ -907,7 +907,7 @@ describe('AnthropicProvider', () => {
       (mockAnthropicClient.messages.create as jest.Mock).mockResolvedValue(asyncIterator);
 
       const generator = provider.chatCompletionStream({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
         temperature: 0.5,
         topP: 0.8,
@@ -948,7 +948,7 @@ describe('AnthropicProvider', () => {
 
       const chunks: { content: string; done: boolean; usage?: object }[] = [];
       for await (const chunk of provider.chatCompletionStream({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
       })) {
         chunks.push(chunk);
@@ -967,7 +967,7 @@ describe('AnthropicProvider', () => {
       );
 
       const generator = provider.chatCompletionStream({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
       });
 
@@ -979,7 +979,7 @@ describe('AnthropicProvider', () => {
     it('should return configured models', async () => {
       const models = await provider.listModels();
 
-      expect(models).toEqual(['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229']);
+      expect(models).toEqual(['claude-sonnet-4-5-20250929', 'claude-opus-4-5-20250604']);
     });
   });
 
@@ -994,7 +994,7 @@ describe('AnthropicProvider', () => {
 
       await expect(
         provider.chatCompletion({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5-20250929',
           messages: [{ role: 'user', content: 'Hi' }],
         })
       ).rejects.toThrow('Anthropic error: Invalid API key');
@@ -1005,7 +1005,7 @@ describe('AnthropicProvider', () => {
 
       await expect(
         provider.chatCompletion({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5-20250929',
           messages: [{ role: 'user', content: 'Hi' }],
         })
       ).rejects.toThrow('Anthropic error: String error');
@@ -1017,7 +1017,7 @@ describe('AnthropicProvider', () => {
       await provider.initialize();
       (mockAnthropicClient.messages.create as jest.Mock).mockResolvedValue({
         content: [{ type: 'text', text: 'OK' }],
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         usage: { input_tokens: 1, output_tokens: 1 },
       });
     });
@@ -1029,7 +1029,7 @@ describe('AnthropicProvider', () => {
       ];
 
       const result = await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -1042,7 +1042,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages,
       });
 
@@ -1055,7 +1055,7 @@ describe('AnthropicProvider', () => {
 
     it('should handle temperature of 0', async () => {
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
         temperature: 0,
       });
@@ -1069,7 +1069,7 @@ describe('AnthropicProvider', () => {
 
     it('should handle temperature of 1', async () => {
       await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
         temperature: 1,
       });
@@ -1084,12 +1084,12 @@ describe('AnthropicProvider', () => {
     it('should handle empty response content', async () => {
       (mockAnthropicClient.messages.create as jest.Mock).mockResolvedValue({
         content: [],
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         usage: { input_tokens: 1, output_tokens: 0 },
       });
 
       const result = await provider.chatCompletion({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         messages: [{ role: 'user', content: 'Hi' }],
       });
 

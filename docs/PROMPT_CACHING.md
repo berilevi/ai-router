@@ -22,7 +22,7 @@ Enable caching on all system messages and the last user message:
 curl -X POST http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5-20250929",
     "enableCache": true,
     "system": "You are a helpful assistant with extensive knowledge...",
     "messages": [
@@ -39,7 +39,7 @@ Specify exactly which messages to cache by index:
 curl -X POST http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5-20250929",
     "enableCache": true,
     "cacheBreakpoints": [0, 2, 4],
     "system": "You are a helpful assistant...",
