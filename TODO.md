@@ -11,13 +11,39 @@
 - ✅ Token counting (`response.usage`)
 - ✅ System messages (native parameter)
 - ✅ Error handling
+- ✅ **Message Batches API** - Bulk processing (see #13 - COMPLETED ✅)
+- ✅ **Prompt Caching** - Cost reduction for repeated prompts (see #14 - COMPLETED ✅)
 
 **Available but NOT Using:**
-- ❌ **Message Batches API** - Bulk processing (see #13 below)
-- ❌ **Prompt Caching** - Cost reduction for repeated prompts (see #14 below)
 - ❌ **Tool Runner Helper** - Automatic tool execution loop (we do manual)
 - ❌ **MCP Integration** - Model Context Protocol helpers (see #15 below)
 - ❌ **Beta Features** - Access to experimental features
+
+### OpenAI SDK (openai v4.73.0)
+**Currently Using:**
+- ✅ Chat Completions API (streaming & non-streaming)
+- ✅ Streaming with SSE
+- ✅ Tool use/function calling
+- ✅ Vision/images (base64 with MIME detection)
+- ✅ Token counting (`response.usage`)
+- ✅ Embeddings API (`text-embedding-3-small`)
+- ✅ Models API (listing available models)
+- ✅ Azure OpenAI compatibility (custom baseURL)
+- ✅ Temperature, Top-P, Max tokens controls
+- ✅ Error handling
+
+**Available but NOT Using:**
+- ❌ **Batch Processing API** - Bulk operations (50% cost reduction, see #17 below)
+- ❌ **Responses API** - Next-gen API with better performance (40-80% faster, see #18 below)
+- ❌ **Assistants API** - Stateful conversations with knowledge base
+- ❌ **Image Generation** - DALL-E integration (see #19 below)
+- ❌ **Audio API** - Speech-to-text (Whisper) and text-to-speech
+- ❌ **Fine-tuning API** - Custom model training
+- ❌ **File Management API** - Upload/manage files for assistants
+- ❌ **Moderations API** - Content policy compliance checking
+- ❌ **Structured Outputs** - JSON Schema validation
+- ❌ **Realtime API** - Low-latency WebSocket connections
+- ❌ **Vector Stores API** - Advanced RAG support
 
 ### GitHub Copilot SDK (@github/copilot-sdk v0.1.22)
 **Currently Using:**
@@ -418,12 +444,19 @@ Add analytics to understand usage patterns.
 
 ## 🎯 Implementation Priority
 
-### Phase 0 (Quick Wins - Leverage Existing SDK Features)
+### Phase 0 (COMPLETED ✅ - SDK Features Implemented)
 **Low Effort, High Value - SDK features already available:**
-1. **Anthropic Prompt Caching (#14)** - Very low effort, very high value (90% cost reduction)
-2. **Anthropic Message Batches (#13)** - Low effort, high value for bulk processing
-3. **MCP Integration (#15)** - Medium effort, high value for extensibility
-4. **Copilot Agent Runtime (#16)** - Medium effort, very high value (autonomous workflows)
+1. ✅ **Anthropic Prompt Caching (#14)** - COMPLETED (90% cost reduction)
+2. ✅ **Anthropic Message Batches (#13)** - COMPLETED (50% cost discount)
+3. **MCP Integration (#15)** - Pending (Medium effort, high value for extensibility)
+4. **Copilot Agent Runtime (#16)** - Pending (Medium effort, very high value)
+
+### Phase 0.5 (Quick Wins - OpenAI SDK Features)
+**Low Effort, High Value - OpenAI SDK features:**
+1. **OpenAI Responses API (#18)** - Very low effort, very high value (40-80% faster)
+2. **OpenAI Batch API (#17)** - Low effort, high value (50% cost reduction)
+3. **Image Generation (#19)** - Low effort, medium value (expands capabilities)
+4. **Audio API (#20)** - Medium effort, medium value (multimodal support)
 
 ### Phase 1 (Critical for Production)
 1. Authentication & Security (#4) - if deploying publicly
@@ -460,51 +493,50 @@ Add analytics to understand usage patterns.
 **Current Version:** 1.0.0
 **Status:** ✅ Feature Complete, Ready for Production
 
+**Completed SDK Enhancements:**
+- ✅ Anthropic Prompt Caching (#14) - 2026-02-13
+- ✅ Anthropic Message Batches API (#13) - 2026-02-13
+
 ---
 
 ## 🚀 SDK-Specific Enhancements (Low Complexity, High Value)
 
-### 13. 📦 Anthropic Message Batches API
+### 13. ✅ Anthropic Message Batches API [COMPLETED]
 **Priority:** Medium
-**Status:** Not Started
+**Status:** ✅ Completed (2026-02-13)
 **SDK Support:** ✅ Native Support in @anthropic-ai/sdk
 
 Leverage Anthropic's built-in batch processing for bulk operations.
 
 **Benefits:**
+- 50% cost reduction for batch processing
 - Process multiple requests efficiently
-- Cost optimization for bulk operations
 - Better throughput for batch jobs
 
-**Tasks:**
-- [ ] Add batch endpoint `/api/batch`
-- [ ] Implement batch creation with custom IDs
-- [ ] Add batch result retrieval
-- [ ] Add batch status monitoring
-- [ ] Document batch API usage
-
-**Implementation:**
-```typescript
-await client.messages.batches.create({
-  requests: [
-    { custom_id: 'req-1', params: {...} },
-    { custom_id: 'req-2', params: {...} },
-  ]
-});
-```
+**Completed Tasks:**
+- [x] Add batch endpoint `/v1/messages/batches`
+- [x] Implement batch creation with custom IDs
+- [x] Add batch result retrieval (JSONL streaming)
+- [x] Add batch status monitoring
+- [x] Add batch cancellation
+- [x] Add batch listing with pagination
+- [x] Document batch API usage (`docs/MESSAGE_BATCHES.md`)
+- [x] Create demo script (`examples/batch-demo.sh`)
 
 **Files:**
-- New: `src/routes/batch.ts`
-- Update: `src/providers/anthropic.ts`
+- ✅ `src/routes/batch.ts`
+- ✅ `src/providers/anthropic.ts` (methods: createBatch, getBatch, getBatchResults, listBatches, cancelBatch)
+- ✅ `docs/MESSAGE_BATCHES.md`
+- ✅ `examples/batch-demo.sh`
 
 **Effort:** Low (SDK already has it)
 **Value:** High for bulk processing use cases
 
 ---
 
-### 14. 💰 Anthropic Prompt Caching
+### 14. ✅ Anthropic Prompt Caching [COMPLETED]
 **Priority:** High
-**Status:** Not Started
+**Status:** ✅ Completed (2026-02-13)
 **SDK Support:** ✅ Native Support in @anthropic-ai/sdk
 
 Use Anthropic's built-in prompt caching to reduce costs and latency.
@@ -514,29 +546,20 @@ Use Anthropic's built-in prompt caching to reduce costs and latency.
 - Faster response times
 - Automatic cache management by Anthropic
 
-**Tasks:**
-- [ ] Add cache control blocks to system messages
-- [ ] Implement cache breakpoint detection
-- [ ] Add cache metrics tracking
-- [ ] Document caching best practices
-- [ ] Add cache configuration options
-
-**Implementation:**
-```typescript
-// Anthropic automatically caches with special markers
-messages: [
-  {
-    role: "user",
-    content: [
-      { type: "text", text: longContext, cache_control: { type: "ephemeral" } }
-    ]
-  }
-]
-```
+**Completed Tasks:**
+- [x] Add cache control blocks to system messages
+- [x] Implement cache breakpoint detection (via `cacheBreakpoints` array)
+- [x] Add cache metrics tracking (`cacheCreationInputTokens`, `cacheReadInputTokens`)
+- [x] Add `enableCache` and `cacheBreakpoints` options to ChatCompletionOptions
+- [x] Document caching best practices (`docs/PROMPT_CACHING.md`)
+- [x] Add cache configuration examples
+- [x] Create demo script (`examples/caching-demo.sh`)
 
 **Files:**
-- Update: `src/providers/anthropic.ts`
-- Update: `src/utils/metrics.ts`
+- ✅ `src/providers/anthropic.ts` (formatMessagesAndSystem, formatUserContent)
+- ✅ `src/types/index.ts` (enableCache, cacheBreakpoints options)
+- ✅ `docs/PROMPT_CACHING.md`
+- ✅ `examples/caching-demo.sh`
 
 **Effort:** Very Low (just enable it)
 **Value:** Very High (cost savings)
@@ -623,6 +646,208 @@ const agent = new Agent({
 
 **Effort:** Medium
 **Value:** Very High (autonomous capabilities)
+
+---
+
+### 17. 📦 OpenAI Batch Processing API
+**Priority:** Medium
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in openai v4
+
+Leverage OpenAI's batch processing for bulk operations with cost savings.
+
+**Benefits:**
+- 50% cost reduction for batch processing
+- Process up to 50,000 requests per batch
+- 24-hour processing window
+- Ideal for evaluations, classifications, embeddings
+
+**Tasks:**
+- [ ] Add batch endpoint `/api/v1/batches` (OpenAI format)
+- [ ] Implement batch creation with JSONL file input
+- [ ] Add batch status monitoring
+- [ ] Add batch result retrieval
+- [ ] Add batch cancellation
+- [ ] Document batch API usage for OpenAI
+
+**Implementation:**
+```typescript
+await client.batches.create({
+  input_file_id: fileId,
+  endpoint: "/v1/chat/completions",
+  completion_window: "24h"
+});
+```
+
+**Files:**
+- New: `src/routes/openai-batch.ts` (or extend existing batch.ts)
+- Update: `src/providers/openaiCompatible.ts`
+
+**Effort:** Low (SDK already has it)
+**Value:** High for bulk processing, evaluations
+
+---
+
+### 18. 🚀 OpenAI Responses API
+**Priority:** High
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in openai v4 (newer than Chat Completions)
+
+Use the next-generation Responses API for better performance and cost.
+
+**Benefits:**
+- 40-80% performance improvement vs Chat Completions
+- Lower costs
+- State preservation across requests
+- Structured reasoning support
+- Better for complex workflows
+
+**Tasks:**
+- [ ] Add Responses API endpoint
+- [ ] Implement state preservation
+- [ ] Add reasoning effort controls
+- [ ] Migrate high-traffic endpoints to Responses API
+- [ ] Document performance comparisons
+
+**Implementation:**
+```typescript
+await client.responses.create({
+  model: "gpt-4.1",
+  messages: [...],
+  reasoning_effort: "medium"  // min, medium, high
+});
+```
+
+**Files:**
+- New: `src/routes/responses.ts`
+- Update: `src/providers/openaiCompatible.ts`
+
+**Effort:** Low
+**Value:** Very High (performance + cost savings)
+
+---
+
+### 19. 🎨 OpenAI Image Generation (DALL-E)
+**Priority:** Low
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in openai v4
+
+Add image generation capabilities using DALL-E.
+
+**Benefits:**
+- Create images from text prompts
+- Generate variations of existing images
+- Edit images with text instructions
+- Multiple sizes and quality levels
+
+**Tasks:**
+- [ ] Add `/api/images/generate` endpoint
+- [ ] Add `/api/images/variations` endpoint
+- [ ] Add `/api/images/edit` endpoint
+- [ ] Support both URL and base64 responses
+- [ ] Document image generation API
+
+**Implementation:**
+```typescript
+await client.images.generate({
+  model: "dall-e-3",
+  prompt: "A futuristic city at sunset",
+  size: "1024x1024",
+  quality: "hd"
+});
+```
+
+**Files:**
+- New: `src/routes/images.ts`
+- Update: `src/providers/openaiCompatible.ts`
+
+**Effort:** Low
+**Value:** Medium (expands capabilities)
+
+---
+
+### 20. 🎙️ OpenAI Audio API
+**Priority:** Low
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in openai v4
+
+Add speech-to-text and text-to-speech capabilities.
+
+**Benefits:**
+- Whisper-based transcription/translation
+- High-quality text-to-speech
+- Multiple voice options
+- Various audio formats
+
+**Tasks:**
+- [ ] Add `/api/audio/transcriptions` endpoint (Whisper)
+- [ ] Add `/api/audio/translations` endpoint
+- [ ] Add `/api/audio/speech` endpoint (TTS)
+- [ ] Support multiple audio formats
+- [ ] Document audio API usage
+
+**Implementation:**
+```typescript
+// Speech-to-text
+await client.audio.transcriptions.create({
+  file: audioFile,
+  model: "whisper-1"
+});
+
+// Text-to-speech
+await client.audio.speech.create({
+  model: "tts-1",
+  voice: "alloy",
+  input: "Hello world"
+});
+```
+
+**Files:**
+- New: `src/routes/audio.ts`
+- Update: `src/providers/openaiCompatible.ts`
+
+**Effort:** Medium (file handling)
+**Value:** Medium (multimodal support)
+
+---
+
+### 21. 🤖 OpenAI Assistants API
+**Priority:** Low
+**Status:** Not Started
+**SDK Support:** ✅ Native Support in openai v4
+
+Add stateful assistant conversations with built-in tools.
+
+**Benefits:**
+- Persistent conversation threads
+- Built-in code interpreter
+- File retrieval and knowledge base
+- Function calling
+- Vector stores for RAG
+
+**Tasks:**
+- [ ] Add `/api/assistants` endpoints
+- [ ] Add `/api/threads` endpoints
+- [ ] Add `/api/runs` endpoints
+- [ ] Support code interpreter
+- [ ] Support file retrieval
+- [ ] Document assistants API
+
+**Implementation:**
+```typescript
+const assistant = await client.beta.assistants.create({
+  name: "Math Tutor",
+  tools: [{type: "code_interpreter"}],
+  model: "gpt-4"
+});
+```
+
+**Files:**
+- New: `src/routes/assistants.ts`
+- New: `src/utils/assistantManager.ts`
+
+**Effort:** High (complex state management)
+**Value:** High (for specific use cases)
 
 ---
 
