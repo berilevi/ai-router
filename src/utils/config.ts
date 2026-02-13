@@ -77,9 +77,11 @@ export const providerConfigs: ProviderConfig[] = [
     // baseUrl is optional for native Anthropic SDK (defaults to https://api.anthropic.com)
     baseUrl: process.env.ANTHROPIC_BASE_URL,
     enabled: !!process.env.ANTHROPIC_API_KEY,
-    defaultModel: process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-3-5-sonnet-20241022',
+    defaultModel: process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-sonnet-4-5-20250929',
     priority: 4,
     models: [
+      'claude-sonnet-4-5-20250929',
+      'claude-haiku-4-5-20251001',
       'claude-3-5-sonnet-20241022',
       'claude-3-opus-20240229',
       'claude-3-sonnet-20240229',
@@ -175,11 +177,11 @@ export const modelMappings: ModelMapping[] = [
     supportsTools: true,
     contextWindow: 16385,
   },
-  // Anthropic models
+  // Anthropic models - Claude 4.5 (latest)
   {
     ollamaModel: 'claude',
     provider: 'anthropic',
-    providerModel: 'claude-3-5-sonnet-20241022',
+    providerModel: 'claude-sonnet-4-5-20250929',
     supportsImages: true,
     supportsTools: true,
     contextWindow: 200000,
@@ -187,7 +189,15 @@ export const modelMappings: ModelMapping[] = [
   {
     ollamaModel: 'claude-sonnet',
     provider: 'anthropic',
-    providerModel: 'claude-3-5-sonnet-20241022',
+    providerModel: 'claude-sonnet-4-5-20250929',
+    supportsImages: true,
+    supportsTools: true,
+    contextWindow: 200000,
+  },
+  {
+    ollamaModel: 'claude-haiku',
+    provider: 'anthropic',
+    providerModel: 'claude-haiku-4-5-20251001',
     supportsImages: true,
     supportsTools: true,
     contextWindow: 200000,
@@ -203,7 +213,7 @@ export const modelMappings: ModelMapping[] = [
   {
     ollamaModel: 'claude-haiku',
     provider: 'anthropic',
-    providerModel: 'claude-3-haiku-20240307',
+    providerModel: 'claude-haiku-4-5-20251001',
     supportsImages: true,
     supportsTools: true,
     contextWindow: 200000,

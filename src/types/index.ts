@@ -200,6 +200,8 @@ export interface StreamChunk {
     cacheCreationInputTokens?: number;
     cacheReadInputTokens?: number;
   };
+  // Tool calls (populated in final chunk when done=true)
+  toolCalls?: unknown[];
 }
 
 export interface GeminiWebConfig {

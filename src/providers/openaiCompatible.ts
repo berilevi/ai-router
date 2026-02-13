@@ -134,15 +134,41 @@ export class OpenAICompatibleProvider extends BaseProvider {
 
       let promptTokens = 0;
       let completionTokens = 0;
+      const toolCallsMap: Map<number, any> = new Map();
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta;
-        
+
         if (delta?.content) {
           yield {
             content: delta.content,
             done: false,
           };
+        }
+
+        // Accumulate tool calls from streaming chunks
+        if (delta?.tool_calls) {
+          for (const toolCallDelta of delta.tool_calls) {
+            const index = toolCallDelta.index;
+
+            if (!toolCallsMap.has(index)) {
+              toolCallsMap.set(index, {
+                id: toolCallDelta.id || '',
+                type: 'function',
+                function: {
+                  name: toolCallDelta.function?.name || '',
+                  arguments: toolCallDelta.function?.arguments || '',
+                },
+              });
+            } else {
+              const existing = toolCallsMap.get(index);
+              if (toolCallDelta.id) existing.id = toolCallDelta.id;
+              if (toolCallDelta.function?.name) existing.function.name = toolCallDelta.function.name;
+              if (toolCallDelta.function?.arguments) {
+                existing.function.arguments += toolCallDelta.function.arguments;
+              }
+            }
+          }
         }
 
         // Track usage if available in the chunk
@@ -151,6 +177,11 @@ export class OpenAICompatibleProvider extends BaseProvider {
           completionTokens = chunk.usage.completion_tokens;
         }
       }
+
+      // Convert tool calls map to array
+      const toolCalls = toolCallsMap.size > 0
+        ? Array.from(toolCallsMap.values())
+        : undefined;
 
       yield {
         content: '',
@@ -162,6 +193,7 @@ export class OpenAICompatibleProvider extends BaseProvider {
               totalTokens: promptTokens + completionTokens,
             }
           : undefined,
+        toolCalls,
       };
     } catch (error) {
       this.handleError(error, 'chatCompletionStream');
