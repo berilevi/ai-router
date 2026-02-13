@@ -10,7 +10,7 @@ echo ""
 
 # Example 1: Create a batch
 echo "1. Creating a batch with 3 requests:"
-BATCH_RESPONSE=$(curl -s -X POST http://localhost:11434/v1/messages/batches \
+BATCH_RESPONSE=$(curl -s -X POST http://localhost:5000/v1/messages/batches \
   -H "Content-Type: application/json" \
   -d '{
     "requests": [
@@ -57,14 +57,14 @@ echo ""
 # Example 2: Check batch status
 echo "2. Checking batch status:"
 sleep 2
-curl -s http://localhost:11434/v1/messages/batches/$BATCH_ID | jq '.'
+curl -s http://localhost:5000/v1/messages/batches/$BATCH_ID | jq '.'
 
 echo ""
 echo ""
 
 # Example 3: List all batches
 echo "3. Listing all batches:"
-curl -s http://localhost:11434/v1/messages/batches | jq '.'
+curl -s http://localhost:5000/v1/messages/batches | jq '.'
 
 echo ""
 echo ""

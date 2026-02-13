@@ -10,7 +10,7 @@ echo ""
 
 # Example 1: Simple caching with system prompt
 echo "1. First request (creates cache):"
-curl -X POST http://localhost:11434/api/chat \
+curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -28,7 +28,7 @@ sleep 2
 
 # Example 2: Second request (uses cache)
 echo "2. Second request with same system prompt (reads from cache):"
-curl -X POST http://localhost:11434/api/chat \
+curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -45,7 +45,7 @@ echo ""
 
 # Example 3: Document Q&A with cache breakpoints
 echo "3. Document Q&A with strategic caching:"
-curl -X POST http://localhost:11434/api/chat \
+curl -X POST http://localhost:5000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-3-5-sonnet-20241022",

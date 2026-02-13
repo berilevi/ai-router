@@ -11,7 +11,7 @@ echo ""
 # Example 1: Check Prometheus metrics
 echo "1. Prometheus format metrics (grep for cache-related):"
 echo ""
-curl -s http://localhost:11434/metrics | grep -E "(cache|batch)" || echo "No cache/batch metrics yet - run some requests first!"
+curl -s http://localhost:5000/metrics | grep -E "(cache|batch)" || echo "No cache/batch metrics yet - run some requests first!"
 
 echo ""
 echo ""
@@ -19,7 +19,7 @@ echo ""
 # Example 2: JSON metrics
 echo "2. JSON format metrics:"
 echo ""
-curl -s http://localhost:11434/metrics/json | jq '.providers.anthropic // "Anthropic provider metrics not available"'
+curl -s http://localhost:5000/metrics/json | jq '.providers.anthropic // "Anthropic provider metrics not available"'
 
 echo ""
 echo ""
@@ -27,7 +27,7 @@ echo ""
 # Example 3: Metrics summary
 echo "3. Metrics summary:"
 echo ""
-curl -s http://localhost:11434/metrics/summary | jq '.'
+curl -s http://localhost:5000/metrics/summary | jq '.'
 
 echo ""
 echo ""
@@ -35,7 +35,7 @@ echo ""
 # Example 4: Provider health status
 echo "4. Provider health and status:"
 echo ""
-curl -s http://localhost:11434/health/providers | jq '.'
+curl -s http://localhost:5000/health/providers | jq '.'
 
 echo ""
 echo ""
