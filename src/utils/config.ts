@@ -81,7 +81,7 @@ export const providerConfigs: ProviderConfig[] = [
     priority: 4,
     models: [
       'claude-sonnet-4-5-20250929',
-      'claude-haiku-4-5-20251001',
+      'claude-haiku-4.5',
       'claude-3-5-sonnet-20241022',
       'claude-3-opus-20240229',
       'claude-3-sonnet-20240229',
@@ -197,7 +197,7 @@ export const modelMappings: ModelMapping[] = [
   {
     ollamaModel: 'claude-haiku',
     provider: 'anthropic',
-    providerModel: 'claude-haiku-4-5-20251001',
+    providerModel: 'claude-haiku-4.5',
     supportsImages: true,
     supportsTools: true,
     contextWindow: 200000,
@@ -213,7 +213,7 @@ export const modelMappings: ModelMapping[] = [
   {
     ollamaModel: 'claude-haiku',
     provider: 'anthropic',
-    providerModel: 'claude-haiku-4-5-20251001',
+    providerModel: 'claude-haiku-4.5',
     supportsImages: true,
     supportsTools: true,
     contextWindow: 200000,

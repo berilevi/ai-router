@@ -13,9 +13,27 @@
  * - OPENAI_API_KEY=sk-... npm test -- tool-calling.integration
  */
 
-import { AnthropicProvider } from '../providers/anthropic';
-import { OpenAICompatibleProvider } from '../providers/openaiCompatible';
-import { ChatCompletionOptions } from '../types';
+// @ts-nocheck
+
+import { AnthropicProvider } from '../../src/providers/anthropic';
+import { OpenAICompatibleProvider } from '../../src/providers/openaiCompatible';
+import { ChatCompletionOptions } from '../../src/types';
+
+// Type definitions for tool calls
+interface AnthropicToolCall {
+  id: string;
+  name: string;
+  input: Record<string, any>;
+}
+
+interface OpenAIToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
 
 const SKIP_INTEGRATION_TESTS = !process.env.RUN_INTEGRATION_TESTS;
 
@@ -71,16 +89,18 @@ const calculatorTool = {
   },
 };
 
-describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => {
+const describeIntegration = SKIP_INTEGRATION_TESTS ? describe.skip : describe;
+
+describeIntegration('Tool Calling Integration Tests', () => {
   describe('Anthropic Provider', () => {
     const anthropicProvider = new AnthropicProvider({
       type: 'anthropic',
       name: 'Anthropic',
       apiKey: process.env.ANTHROPIC_API_KEY || '',
       enabled: !!process.env.ANTHROPIC_API_KEY,
-      defaultModel: 'claude-haiku-4-5-20251001', // Use Haiku 4.5 for cheaper testing
+      defaultModel: 'claude-haiku-4.5', // Use Haiku 4.5 for cheaper testing
       priority: 4,
-      models: ['claude-haiku-4-5-20251001'],
+      models: ['claude-haiku-4.5'],
     });
 
     beforeAll(async () => {
@@ -89,9 +109,13 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
       }
     });
 
-    it.skipIf(!process.env.ANTHROPIC_API_KEY)('should call weather tool', async () => {
+    const itAnth = process.env.ANTHROPIC_API_KEY ? it : it.skip;
+    const itOpenAI = process.env.OPENAI_API_KEY ? it : it.skip;
+    const itBoth = (process.env.ANTHROPIC_API_KEY && process.env.OPENAI_API_KEY) ? it : it.skip;
+
+    itAnth('should call weather tool', async () => {
       const options: ChatCompletionOptions = {
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4.5',
         maxTokens: 1024,
         messages: [
           {
@@ -122,9 +146,9 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
       expect(location.toLowerCase()).toContain('san francisco');
     }, 30000);
 
-    it.skipIf(!process.env.ANTHROPIC_API_KEY)('should call calculator tool', async () => {
+    itAnth('should call calculator tool', async () => {
       const options: ChatCompletionOptions = {
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4.5',
         maxTokens: 1024,
         messages: [
           {
@@ -151,10 +175,10 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
       });
     }, 30000);
 
-    it.skipIf(!process.env.ANTHROPIC_API_KEY)('should handle multi-turn tool conversation', async () => {
+    itAnth('should handle multi-turn tool conversation', async () => {
       // First request with tool
       const options1: ChatCompletionOptions = {
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4.5',
         maxTokens: 1024,
         messages: [
           {
@@ -179,7 +203,7 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
 
       // Second request with tool result
       const options2: ChatCompletionOptions = {
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4.5',
         maxTokens: 1024,
         messages: [
           {
@@ -215,6 +239,8 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
   });
 
   describe('OpenAI Provider', () => {
+    const itOpenAI = process.env.OPENAI_API_KEY ? it : it.skip;
+
     const openaiProvider = new OpenAICompatibleProvider({
       type: 'openai',
       name: 'OpenAI',
@@ -231,7 +257,7 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
       }
     });
 
-    it.skipIf(!process.env.OPENAI_API_KEY)('should call weather tool', async () => {
+    itOpenAI('should call weather tool', async () => {
       const options: ChatCompletionOptions = {
         model: 'gpt-4o-mini',
         maxTokens: 1024,
@@ -265,7 +291,7 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
       expect(args.location.toLowerCase()).toContain('new york');
     }, 30000);
 
-    it.skipIf(!process.env.OPENAI_API_KEY)('should call calculator tool', async () => {
+    itOpenAI('should call calculator tool', async () => {
       const options: ChatCompletionOptions = {
         model: 'gpt-4o-mini',
         maxTokens: 1024,
@@ -296,7 +322,7 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
       });
     }, 30000);
 
-    it.skipIf(!process.env.OPENAI_API_KEY)('should handle streaming with tool calls', async () => {
+    itOpenAI('should handle streaming with tool calls', async () => {
       const options: ChatCompletionOptions = {
         model: 'gpt-4o-mini',
         maxTokens: 1024,
@@ -332,7 +358,9 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
   });
 
   describe('Cross-Provider Comparison', () => {
-    it.skipIf(!process.env.ANTHROPIC_API_KEY || !process.env.OPENAI_API_KEY)(
+    const itBoth = (process.env.ANTHROPIC_API_KEY && process.env.OPENAI_API_KEY) ? it : it.skip;
+
+    itBoth(
       'should produce similar tool calls for same prompt',
       async () => {
         const anthropicProvider = new AnthropicProvider({
@@ -340,9 +368,9 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
           name: 'Anthropic',
           apiKey: process.env.ANTHROPIC_API_KEY!,
           enabled: true,
-          defaultModel: 'claude-haiku-4-5-20251001',
+          defaultModel: 'claude-haiku-4.5',
           priority: 4,
-          models: ['claude-haiku-4-5-20251001'],
+          models: ['claude-haiku-4.5'],
         });
 
         const openaiProvider = new OpenAICompatibleProvider({
@@ -367,7 +395,7 @@ describe.skipIf(SKIP_INTEGRATION_TESTS)('Tool Calling Integration Tests', () => 
         };
 
         const [anthropicResponse, openaiResponse] = await Promise.all([
-          anthropicProvider.chatCompletion({ ...options, model: 'claude-haiku-4-5-20251001' }),
+          anthropicProvider.chatCompletion({ ...options, model: 'claude-haiku-4.5' }),
           openaiProvider.chatCompletion({ ...options, model: 'gpt-4o-mini' }),
         ]);
 

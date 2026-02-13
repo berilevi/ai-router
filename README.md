@@ -524,6 +524,7 @@ npm test anthropic.test.ts
   - Image handling (JPEG, PNG, GIF, WebP, edge cases)
   - Tool formatting (OpenAI ↔ Anthropic conversion)
   - Error handling and edge cases
+  - ✅ **Integration tests passing with Claude Haiku 4.5** (weather, calculator, multi-turn)
 
 - **ProviderFactory** (5 tests)
   - Provider instance caching

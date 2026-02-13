@@ -186,6 +186,8 @@ curl http://localhost:5000/health/providers | jq '.'
 ✅ **All implementations complete**
 ✅ **All documentation written**
 ✅ **All examples created**
+✅ **Integration tests passing with Claude Haiku 4.5**
+✅ **Tool calling verified: weather, calculator, multi-turn conversations**
 ⚠️  **Anthropic API key needed to run demos**
 
 ---

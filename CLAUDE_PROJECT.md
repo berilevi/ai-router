@@ -269,7 +269,35 @@ docker run -p 11434:11434 --env-file .env ai-router
 
 ## Changes Made This Session
 
-### Bug Fixes
+### Session 2026-02-13 (Continuation)
+
+#### Documentation Updates
+1. **Updated TODO.md** - Comprehensive update with completed features
+   - Added completed items: Anthropic Messages API (#12), Tool Calling Tests (#21), Claude 4.5 Support
+   - Updated version from 1.0.0 to 1.1.0
+   - Updated test coverage: 82 → 96 tests (95 passing)
+   - Renumbered remaining SDK enhancements (#15-21 → #22-28)
+   - Reorganized Implementation Priority phases
+
+2. **Fixed Integration Test Model Names**
+   - Changed `claude-haiku-4-5-20251001` → `claude-haiku-4.5` (correct model name)
+   - Updated `tests/integration/tool-calling.integration.test.ts` (9 instances)
+   - Updated `src/utils/config.ts` model mappings (3 instances)
+
+3. **Ran Integration Tests Successfully**
+   - ✅ 3/3 Anthropic tests passing with Claude Haiku 4.5
+   - Verified: weather tool, calculator tool, multi-turn conversations
+   - Used cheapest model (Haiku 4.5) to minimize costs
+   - Test execution time: ~12 seconds
+
+4. **Updated Documentation with Test Results**
+   - `README.md` - Added integration test status
+   - `IMMEDIATE_STEPS.md` - Added verification notes
+   - `SESSION_SUMMARY.md` - Created comprehensive session summary
+
+### Session 2026-02-13 (Initial)
+
+#### Bug Fixes
 1. Fixed `requestQueue.ts` cleanup interval bug (incorrect Map iteration)
 2. Fixed `retryHandler.ts` fallback provider logic (now properly executes on fallbacks)
 3. Added proper Puppeteer types to `sessionManager.ts`
