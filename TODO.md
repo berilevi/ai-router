@@ -1,7 +1,7 @@
 # AI Router - Pending TODO Items
 
 **Last Updated:** 2026-02-16
-**Completion Rate:** 12/28 (43%)
+**Completion Rate:** 13/28 (46%)
 **Status:** Production Ready
 
 See `docs/` folder for completed feature implementations.
@@ -57,22 +57,6 @@ Add authentication and authorization for the router itself.
 - [ ] Rate limiting per API key
 - [ ] Usage quotas
 - [ ] Request filtering/sanitization
-
----
-
-### 6. Load Balancing & High Availability
-**Priority:** Medium
-**Status:** Not Started
-
-Improve reliability and distribution of requests.
-
-**Tasks:**
-- [ ] Round-robin between multiple API keys
-- [ ] Config file must support fallback chains based on AI model ids, ie user want to use up free models credits and fallback on premium models with limits
-- [ ] Provider fallback chains, respect priority order as rate limits allow, on API errors fallback gracefully to the next provider in fallback chain
-- [ ] Geo-based routing
-- [ ] Circuit breaker pattern
-- [ ] Handle API error 429, disable the model gracefully until rate limit time passes and re-enable it 
 
 ---
 
@@ -202,4 +186,4 @@ Integrate Copilot's production-tested agent runtime.
 - All items are **optional** - current system is production-ready
 - Prioritize based on use case
 - Implementation details for **completed items** are in `docs/` folder
-- See `docs/CACHE_IMPLEMENTATION.md`, `docs/PROMPT_CACHING.md`, `docs/OPENAI_BATCH.md`, etc. for feature documentation
+- See `docs/CACHE_IMPLEMENTATION.md`, `docs/PROMPT_CACHING.md`, `docs/OPENAI_BATCH.md`, `docs/LOAD_BALANCING.md`, etc. for feature documentation

@@ -3,6 +3,7 @@ import { ProviderFactory } from '../providers';
 import { routeModel, getFallbackProviders } from './modelRouter';
 import { providerConfigs } from './config';
 import { logger } from './logger';
+import { getLoadBalancer } from './loadBalancer';
 
 interface RetryConfig {
   maxRetries: number;
@@ -183,29 +184,54 @@ export class RetryHandler {
   }
 
   /**
-   * Execute chat completion with retry and fallback
+   * Execute chat completion with retry, fallback, and load balancing
    */
   async executeChatCompletion(
     options: ChatCompletionOptions & { provider: ProviderType }
   ): Promise<RetryResult<ChatCompletionResponse>> {
     const { provider, ...completionOptions } = options;
 
-    const providerInstance = ProviderFactory.getProvider(provider);
+    // Try to use load balancer for provider selection
+    let selectedProvider: ProviderType = provider;
+    let selectedModel: string = options.model;
+    let selectedApiKey: string | undefined;
+
+    try {
+      const loadBalancer = getLoadBalancer();
+      const selection = loadBalancer.selectProvider(options.model);
+
+      if (selection) {
+        selectedProvider = selection.provider;
+        selectedModel = selection.providerModel;
+        selectedApiKey = selection.apiKey;
+
+        if (selection.isFallback) {
+          logger.info(`Load balancer selected fallback: ${selectedProvider}:${selectedModel}`);
+        }
+      }
+    } catch (e) {
+      logger.debug('Load balancer selection failed, using default provider:', e);
+    }
+
+    const providerInstance = ProviderFactory.getProvider(selectedProvider);
     if (!providerInstance) {
       return {
         success: false,
-        error: new Error(`Provider ${provider} not found`),
+        error: new Error(`Provider ${selectedProvider} not found`),
         attempts: 0,
         providersTried: [],
         totalDuration: 0,
       };
     }
 
-    return this.executeWithRetry(
-      () => providerInstance.chatCompletion(completionOptions),
+    const result = await this.executeWithRetry(
+      () => providerInstance.chatCompletion({
+        ...completionOptions,
+        model: selectedModel,
+      }),
       {
-        provider,
-        model: options.model,
+        provider: selectedProvider,
+        model: selectedModel,
         createFallbackOperation: (fallbackProvider: ProviderType, fallbackModel: string) => {
           const fallbackInstance = ProviderFactory.getProvider(fallbackProvider);
           if (!fallbackInstance || !fallbackInstance.isAvailable()) {
@@ -219,6 +245,15 @@ export class RetryHandler {
         },
       }
     );
+
+    // Record result with load balancer
+    if (result.success) {
+      this.recordSuccess(selectedProvider, selectedModel, selectedApiKey);
+    } else if (result.error) {
+      this.recordFailure(selectedProvider, selectedModel, selectedApiKey, result.error);
+    }
+
+    return result;
   }
 
   /**
@@ -306,13 +341,76 @@ export class RetryHandler {
     }
 
     // Check for specific error types
-    if (error.name === 'TimeoutError' || 
+    if (error.name === 'TimeoutError' ||
         error.name === 'NetworkError' ||
         error.name === 'ConnectionError') {
       return true;
     }
 
     return false;
+  }
+
+  /**
+   * Extract error details for load balancer
+   */
+  private extractErrorDetails(error: Error): {
+    statusCode?: number;
+    headers?: Record<string, string>;
+    message: string;
+  } {
+    const details: {
+      statusCode?: number;
+      headers?: Record<string, string>;
+      message: string;
+    } = {
+      message: error.message,
+    };
+
+    if (error instanceof ProviderError) {
+      details.statusCode = error.statusCode;
+    }
+
+    // Try to extract status code from error message
+    const statusMatch = error.message.match(/\b(4\d{2}|5\d{2})\b/);
+    if (statusMatch && !details.statusCode) {
+      details.statusCode = parseInt(statusMatch[1], 10);
+    }
+
+    return details;
+  }
+
+  /**
+   * Record failure with load balancer
+   */
+  private recordFailure(
+    provider: ProviderType,
+    model: string,
+    apiKey: string | undefined,
+    error: Error
+  ): void {
+    try {
+      const loadBalancer = getLoadBalancer();
+      const errorDetails = this.extractErrorDetails(error);
+      loadBalancer.recordFailure(provider, model, apiKey, errorDetails);
+    } catch (e) {
+      logger.debug('Failed to record failure in load balancer:', e);
+    }
+  }
+
+  /**
+   * Record success with load balancer
+   */
+  private recordSuccess(
+    provider: ProviderType,
+    model: string | undefined,
+    apiKey: string | undefined
+  ): void {
+    try {
+      const loadBalancer = getLoadBalancer();
+      loadBalancer.recordSuccess(provider, model, apiKey);
+    } catch (e) {
+      logger.debug('Failed to record success in load balancer:', e);
+    }
   }
 
   /**

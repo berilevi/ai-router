@@ -5,6 +5,7 @@ import { requestQueue } from '../utils/requestQueue';
 import { sessionManager } from '../utils/sessionManager';
 import { metricsCollector } from '../utils/metrics';
 import { logger } from '../utils/logger';
+import { getLoadBalancer } from '../utils/loadBalancer';
 
 const router = Router();
 
@@ -157,6 +158,61 @@ router.get('/live', async (_req: Request, res: Response) => {
     alive: true,
     timestamp: new Date().toISOString(),
   });
+});
+
+/**
+ * GET /health/loadbalancer - Load balancer status
+ */
+router.get('/loadbalancer', async (_req: Request, res: Response) => {
+  try {
+    const loadBalancer = getLoadBalancer();
+    const status = loadBalancer.getStatus();
+
+    // Convert Maps to objects for JSON serialization
+    const circuitBreakers: Record<string, unknown> = {};
+    for (const [key, value] of status.circuitBreakers.entries()) {
+      circuitBreakers[key] = value;
+    }
+
+    const rateLimits: Record<string, unknown> = {};
+    for (const [key, value] of status.rateLimits.entries()) {
+      rateLimits[key] = value;
+    }
+
+    const keyRotators: Record<string, unknown> = {};
+    for (const [key, value] of status.keyRotators.entries()) {
+      keyRotators[key] = value;
+    }
+
+    res.json({
+      circuitBreakers,
+      rateLimits,
+      keyRotators,
+      fallbackChains: status.fallbackChains,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Load balancer status error:', error);
+    res.status(500).json({ error: 'Failed to get load balancer status' });
+  }
+});
+
+/**
+ * POST /health/loadbalancer/reset - Reset load balancer state
+ */
+router.post('/loadbalancer/reset', async (_req: Request, res: Response) => {
+  try {
+    const loadBalancer = getLoadBalancer();
+    loadBalancer.resetAll();
+
+    res.json({
+      message: 'Load balancer state reset successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Load balancer reset error:', error);
+    res.status(500).json({ error: 'Failed to reset load balancer' });
+  }
 });
 
 export default router;
