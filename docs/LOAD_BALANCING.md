@@ -166,6 +166,91 @@ If a key fails consecutively:
 3. After timeout, key is re-enabled automatically
 4. Success resets failure count
 
+### How Key Rotation Works With Fallback Chains
+
+The fallback chain selects **which provider to use**, while key rotation selects **which API key to use for that provider**. They work together, not against each other.
+
+#### Flow
+
+```
+Client Request
+    │
+    ▼
+┌──────────────────────────────────────────────┐
+│ Step 1: Fallback Chain - Select Provider    │
+│ Walk array [0→N] until finding available:   │
+│   - Provider enabled?                        │
+│   - Circuit breaker CLOSED?                  │
+│   - Not rate limited?                        │
+│   → Selected: anthropic:claude-sonnet        │
+└──────────────────────────────────────────────┘
+    │
+    ▼
+┌──────────────────────────────────────────────┐
+│ Step 2: Key Rotator - Select API Key        │
+│ (WITHIN the selected provider)               │
+│                                               │
+│ anthropic has 3 keys: key1, key2, key3       │
+│ Current round-robin index: 1                 │
+│   → Selected: key2                           │
+└──────────────────────────────────────────────┘
+    │
+    ▼
+Execute Request
+```
+
+#### Example Scenario
+
+**Configuration:**
+```bash
+MODEL_FALLBACK_CHAIN='[
+  { "model": "claude-sonnet-4-5-20250929", "provider": "anthropic" },
+  { "model": "sonnet", "provider": "copilot" },
+  { "model": "gpt-4o", "provider": "openai" }
+]'
+
+ANTHROPIC_API_KEYS=sk-ant-key1,sk-ant-key2,sk-ant-key3
+OPENAI_API_KEYS=sk-openai-key1,sk-openai-key2
+```
+
+**Request Flow:**
+
+1. **Request 1**: Fallback chain → anthropic (index 0), Key rotation → key1
+2. **Request 2**: Fallback chain → anthropic (index 0), Key rotation → key2
+3. **Request 3**: Fallback chain → anthropic (index 0), Key rotation → key3
+4. **Request 4**: Fallback chain → anthropic (index 0), Key rotation → key1 (wraps)
+
+**When a Key Fails:**
+
+1. **Request 1**: anthropic + key1 → ❌ Fails 5 times → key1 disabled
+2. **Request 2**: anthropic + key2 (skips disabled key1) → ✅ Success
+3. **Request 3**: anthropic + key3 → ✅ Success
+4. **Request 4**: anthropic + key2 (wraps, key1 still disabled) → ✅ Success
+
+**When ALL Keys Fail:**
+
+1. **All 3 Anthropic keys disabled** (rate limited or errors)
+2. Fallback chain moves to next provider
+3. **Request**: copilot + GitHub token → ✅ Success
+
+#### Benefits of Combining Both
+
+- **Without key rotation**: 1 key fails → provider fails → immediate fallback
+- **With key rotation**: key1 fails → use key2 → key2 fails → use key3 → all fail → fallback
+
+You get **more resilience** before needing to fall back to a different provider.
+
+**Real-world example:**
+```
+Traffic spike with 3 Anthropic keys (50k tokens/min each):
+1. Distribute across keys → 150k tokens/min total capacity
+2. Key1 rate limited → Disable key1, use key2 & key3 (100k tokens/min)
+3. All Anthropic keys exhausted → Fallback to OpenAI
+4. OpenAI serves overflow traffic
+```
+
+The combination provides **horizontal scaling (multiple keys)** AND **vertical fallback (multiple providers)**.
+
 ## Model Fallback Chain
 
 When a provider is unavailable, requests automatically fall back to the next entry in the chain.
