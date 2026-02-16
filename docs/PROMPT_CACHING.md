@@ -12,18 +12,68 @@ Anthropic caches the prefixes of your prompts, so repeated context (like system 
 - **Faster Response Times**: Cached content is processed much faster
 - **Automatic Management**: Cache TTL is 5 minutes, managed automatically by Anthropic
 
+## Configuration
+
+### Global Settings (Recommended)
+
+Enable automatic caching for all Anthropic requests via environment variables:
+
+```bash
+# Enable automatic prompt caching (default: true)
+ANTHROPIC_ENABLE_CACHE=true
+
+# Minimum tokens to enable caching (default: 1024)
+ANTHROPIC_CACHE_MIN_TOKENS=1024
+
+# Auto-cache system prompts (default: true, recommended)
+ANTHROPIC_CACHE_SYSTEM_PROMPT=true
+
+# Auto-cache last user message (default: false)
+ANTHROPIC_CACHE_LAST_MESSAGE=false
+```
+
+**Benefits:**
+- ✅ Automatic cost savings without client changes
+- ✅ Smart defaults (only caches when ≥1024 tokens)
+- ✅ Backward compatible (clients don't need to know about caching)
+- ✅ Client can override per-request
+
+**How it works:**
+1. Router checks if prompt is large enough (≥1024 tokens)
+2. If yes, automatically adds `cache_control` to system prompt
+3. Client receives same response format with cache metrics
+4. Subsequent requests with same system prompt read from cache (90% cheaper!)
+
 ## Usage
 
-### Option 1: Auto-caching (Simplest)
+### Option 1: Use Global Settings (Automatic)
 
-Enable caching on all system messages and the last user message:
+Just make normal requests - caching happens automatically:
 
 ```bash
 curl -X POST http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-sonnet-4-5-20250929",
-    "enableCache": true,
+    "system": "You are a helpful assistant with extensive knowledge...",  # Auto-cached if ≥1024 tokens
+    "messages": [
+      {"role": "user", "content": "Tell me about quantum computing"}
+    ]
+  }'
+```
+
+No `enableCache` flag needed!
+
+### Option 2: Client-Controlled Caching
+
+Override global settings per-request:
+
+```bash
+curl -X POST http://localhost:11434/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4-5-20250929",
+    "enableCache": true,     # Explicitly enable
     "system": "You are a helpful assistant with extensive knowledge...",
     "messages": [
       {"role": "user", "content": "Tell me about quantum computing"}
@@ -31,7 +81,7 @@ curl -X POST http://localhost:11434/api/chat \
   }'
 ```
 
-### Option 2: Custom Cache Breakpoints
+### Option 3: Custom Cache Breakpoints
 
 Specify exactly which messages to cache by index:
 
@@ -50,6 +100,21 @@ curl -X POST http://localhost:11434/api/chat \
       {"role": "assistant", "content": "Got it."},                  // Index 3
       {"role": "user", "content": "Now answer this: ..."}           // Index 4 - cached
     ]
+  }'
+```
+
+### Option 4: Disable Caching Per-Request
+
+Disable even if global settings enable it:
+
+```bash
+curl -X POST http://localhost:11434/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4-5-20250929",
+    "enableCache": false,    # Override global setting
+    "system": "Short prompt that changes every time",
+    "messages": [...]
   }'
 ```
 

@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { BaseProvider } from './base';
 import { logger } from '../utils/logger';
+import { anthropicPromptCacheConfig } from '../utils/config';
 
 /**
  * Extended ChatCompletionMessage type with tool-related fields
@@ -71,10 +72,18 @@ export class AnthropicProvider extends BaseProvider {
     }
 
     try {
+      // Calculate content length for cache decision
+      const systemLength = options.system?.length || 0;
+      const messagesLength = options.messages.reduce((sum, msg) => sum + msg.content.length, 0);
+      const totalLength = systemLength + messagesLength;
+
+      // Determine caching strategy
+      const cacheStrategy = this.shouldEnableCache(options, totalLength);
+
       const { messages, system } = this.formatMessagesAndSystem(
         options.messages,
         options.system,
-        options.enableCache,
+        cacheStrategy.enabled ? true : options.enableCache, // Use strategy or client override
         options.cacheBreakpoints
       );
 
@@ -86,7 +95,7 @@ export class AnthropicProvider extends BaseProvider {
 
       // Add system message if present (with caching support)
       if (system) {
-        if (options.enableCache && typeof system === 'string') {
+        if (cacheStrategy.enabled && cacheStrategy.cacheSystemPrompt && typeof system === 'string') {
           // Enable caching for system prompt
           requestParams.system = [
             {
@@ -95,6 +104,7 @@ export class AnthropicProvider extends BaseProvider {
               cache_control: { type: 'ephemeral' },
             },
           ];
+          logger.debug('Prompt caching enabled for system prompt');
         } else {
           requestParams.system = system;
         }
@@ -155,10 +165,18 @@ export class AnthropicProvider extends BaseProvider {
     }
 
     try {
+      // Calculate content length for cache decision
+      const systemLength = options.system?.length || 0;
+      const messagesLength = options.messages.reduce((sum, msg) => sum + msg.content.length, 0);
+      const totalLength = systemLength + messagesLength;
+
+      // Determine caching strategy
+      const cacheStrategy = this.shouldEnableCache(options, totalLength);
+
       const { messages, system } = this.formatMessagesAndSystem(
         options.messages,
         options.system,
-        options.enableCache,
+        cacheStrategy.enabled ? true : options.enableCache, // Use strategy or client override
         options.cacheBreakpoints
       );
 
@@ -171,7 +189,7 @@ export class AnthropicProvider extends BaseProvider {
 
       // Add system message if present (with caching support)
       if (system) {
-        if (options.enableCache && typeof system === 'string') {
+        if (cacheStrategy.enabled && cacheStrategy.cacheSystemPrompt && typeof system === 'string') {
           // Enable caching for system prompt
           requestParams.system = [
             {
@@ -180,6 +198,7 @@ export class AnthropicProvider extends BaseProvider {
               cache_control: { type: 'ephemeral' },
             },
           ];
+          logger.debug('Prompt caching enabled for system prompt (streaming)');
         } else {
           requestParams.system = system;
         }
@@ -237,6 +256,53 @@ export class AnthropicProvider extends BaseProvider {
     } catch (error) {
       this.handleError(error, 'chatCompletionStream');
     }
+  }
+
+  /**
+   * Determine if prompt caching should be enabled based on global config and request options
+   *
+   * Priority:
+   * 1. Client explicitly sets enableCache (true or false) → use client's choice
+   * 2. Global config disabled → don't enable
+   * 3. Content too small (< minTokens) → don't enable
+   * 4. Global config enabled + sufficient content → enable
+   */
+  private shouldEnableCache(
+    options: ChatCompletionOptions,
+    contentLength: number
+  ): { enabled: boolean; cacheSystemPrompt: boolean; cacheLastMessage: boolean } {
+    // Client explicitly disabled caching
+    if (options.enableCache === false) {
+      return { enabled: false, cacheSystemPrompt: false, cacheLastMessage: false };
+    }
+
+    // Client explicitly enabled caching
+    if (options.enableCache === true) {
+      return {
+        enabled: true,
+        cacheSystemPrompt: true,
+        cacheLastMessage: options.cacheBreakpoints !== undefined, // Use custom breakpoints if provided
+      };
+    }
+
+    // Use global config defaults
+    if (!anthropicPromptCacheConfig.enabled) {
+      return { enabled: false, cacheSystemPrompt: false, cacheLastMessage: false };
+    }
+
+    // Estimate if content is large enough (rough estimate: ~4 chars per token)
+    const estimatedTokens = Math.floor(contentLength / 4);
+    if (estimatedTokens < anthropicPromptCacheConfig.minTokens) {
+      logger.debug(`Prompt caching disabled: estimated ${estimatedTokens} tokens < ${anthropicPromptCacheConfig.minTokens} minimum`);
+      return { enabled: false, cacheSystemPrompt: false, cacheLastMessage: false };
+    }
+
+    // Global config says enable
+    return {
+      enabled: true,
+      cacheSystemPrompt: anthropicPromptCacheConfig.cacheSystemPrompt,
+      cacheLastMessage: anthropicPromptCacheConfig.cacheLastMessage,
+    };
   }
 
   /**

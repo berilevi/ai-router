@@ -28,6 +28,14 @@ export const cacheConfig: CacheConfig = {
   strategy: (process.env.CACHE_STRATEGY as 'lru' | 'fifo') || 'lru',
 };
 
+// Anthropic Prompt Caching configuration
+export const anthropicPromptCacheConfig = {
+  enabled: process.env.ANTHROPIC_ENABLE_CACHE !== 'false', // Enabled by default
+  minTokens: parseInt(process.env.ANTHROPIC_CACHE_MIN_TOKENS || '1024', 10), // Anthropic's minimum
+  cacheSystemPrompt: process.env.ANTHROPIC_CACHE_SYSTEM_PROMPT !== 'false', // Enabled by default
+  cacheLastMessage: process.env.ANTHROPIC_CACHE_LAST_MESSAGE === 'true', // Disabled by default
+};
+
 // Provider configurations
 export const providerConfigs: ProviderConfig[] = [
   // Copilot provider (highest priority when enabled)
