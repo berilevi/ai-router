@@ -166,49 +166,60 @@ If a key fails consecutively:
 3. After timeout, key is re-enabled automatically
 4. Success resets failure count
 
-## Provider Fallback Chains
+## Model Fallback Chain
 
-When the primary provider is unavailable, requests automatically fall back to alternatives.
+When a provider is unavailable, requests automatically fall back to the next entry in the chain.
 
-### Default Behavior
+### Configuration
 
-Fallback order is determined by provider priority:
-
-```typescript
-// Provider priorities (lower = higher priority)
-Copilot    → priority: 0
-Gemini Web → priority: 1
-Gemini API → priority: 2
-OpenAI     → priority: 3
-Anthropic  → priority: 4
-```
-
-### Custom Fallback Chains
-
-Define model-specific fallback chains via environment:
+The fallback chain is a simple JSON array where **array index = priority** (0 is highest).
 
 ```bash
-MODEL_FALLBACK_CHAINS='{
-  "claude": {
-    "primary": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-5-20250929"
-    },
-    "fallbacks": [
-      { "provider": "copilot", "model": "sonnet", "priority": 1 },
-      { "provider": "openai", "model": "gpt-4o", "priority": 2 }
-    ]
-  },
-  "gpt-4o": {
-    "primary": {
-      "provider": "openai",
-      "model": "gpt-4o"
-    },
-    "fallbacks": [
-      { "provider": "copilot", "model": "gpt-4.1", "priority": 1 }
-    ]
-  }
-}'
+MODEL_FALLBACK_CHAIN='[
+  { "model": "claude-sonnet-4-5-20250929", "provider": "anthropic" },
+  { "model": "sonnet", "provider": "copilot" },
+  { "model": "claude-opus-4-5-20250604", "provider": "anthropic" },
+  { "model": "gpt-4o", "provider": "openai" },
+  { "model": "gpt5", "provider": "copilot" },
+  { "model": "gemini-1.5-pro-latest", "provider": "gemini" }
+]'
+```
+
+### How It Works
+
+1. Request comes in
+2. Walk through the array from index 0
+3. For each entry, check:
+   - Is the provider enabled?
+   - Is the circuit breaker CLOSED?
+   - Is the provider rate limited?
+   - Is there an available API key?
+4. First entry that passes all checks → use it
+5. Stop (don't try remaining entries)
+
+```
+Request
+   │
+   ▼
+┌─────────────────────────────────────────────────┐
+│ Index 0: anthropic/claude-sonnet-4-5           │
+│ Check: Rate limited? ❌ YES → SKIP             │
+└─────────────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────────────┐
+│ Index 1: copilot/sonnet                        │
+│ Check: Circuit breaker? ❌ OPEN → SKIP         │
+└─────────────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────────────┐
+│ Index 2: anthropic/claude-opus-4-5             │
+│ Check: All OK ✅ → USE THIS                    │
+└─────────────────────────────────────────────────┘
+   │
+   ▼
+Return response (indexes 3-5 never tried)
 ```
 
 ## Monitoring
@@ -244,7 +255,11 @@ Response:
       "availableKeys": 2
     }
   },
-  "fallbackChains": ["claude", "gpt-4o"],
+  "fallbackChain": [
+    { "model": "claude-sonnet-4-5-20250929", "provider": "anthropic" },
+    { "model": "sonnet", "provider": "copilot" },
+    { "model": "gpt-4o", "provider": "openai" }
+  ],
   "timestamp": "2026-02-16T10:00:00.000Z"
 }
 ```
@@ -278,19 +293,16 @@ CIRCUIT_BREAKER_TIMEOUT=30
 RATE_LIMIT_DEFAULT_RETRY=60
 ```
 
-### 3. Define Fallback Chains
+### 3. Define Fallback Chain
 
-For critical models, define explicit fallbacks:
+Configure your preferred provider order:
 
 ```bash
-MODEL_FALLBACK_CHAINS='{
-  "claude-sonnet": {
-    "primary": { "provider": "anthropic", "model": "claude-sonnet-4-5-20250929" },
-    "fallbacks": [
-      { "provider": "openai", "model": "gpt-4o", "priority": 1 }
-    ]
-  }
-}'
+MODEL_FALLBACK_CHAIN='[
+  { "model": "claude-sonnet-4-5-20250929", "provider": "anthropic" },
+  { "model": "sonnet", "provider": "copilot" },
+  { "model": "gpt-4o", "provider": "openai" }
+]'
 ```
 
 ### 4. Monitor Circuit Breaker State
@@ -301,18 +313,17 @@ Regularly check `/health/loadbalancer` to identify:
 - Keys that need attention
 - Rate limit patterns
 
-### 5. Use Cost-Effective Fallbacks
+### 5. Order by Cost
 
-Order fallbacks by cost when appropriate:
+Put cheaper/free providers earlier in the chain:
 
 ```json
-{
-  "fallbacks": [
-    { "provider": "copilot", "model": "sonnet", "priority": 1 },    // Free tier
-    { "provider": "openai", "model": "gpt-4o-mini", "priority": 2 }, // Cheaper
-    { "provider": "openai", "model": "gpt-4o", "priority": 3 }       // Premium
-  ]
-}
+[
+  { "model": "sonnet", "provider": "copilot" },       // Free (GitHub subscription)
+  { "model": "gpt-4o-mini", "provider": "openai" },   // Cheaper
+  { "model": "gpt-4o", "provider": "openai" },        // More expensive
+  { "model": "claude-opus-4-5", "provider": "anthropic" } // Premium
+]
 ```
 
 ## Architecture

@@ -198,7 +198,7 @@ export class RetryHandler {
 
     try {
       const loadBalancer = getLoadBalancer();
-      const selection = loadBalancer.selectProvider(options.model);
+      const selection = loadBalancer.selectProvider();
 
       if (selection) {
         selectedProvider = selection.provider;
@@ -206,7 +206,7 @@ export class RetryHandler {
         selectedApiKey = selection.apiKey;
 
         if (selection.isFallback) {
-          logger.info(`Load balancer selected fallback: ${selectedProvider}:${selectedModel}`);
+          logger.info(`Load balancer selected fallback: ${selectedProvider}:${selectedModel} (index ${selection.fallbackIndex})`);
         }
       }
     } catch (e) {

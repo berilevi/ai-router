@@ -12,7 +12,7 @@ import { copilotSessionManager } from './utils/copilotSessionManager';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { cacheMiddleware, cacheStatsMiddleware } from './middleware/cacheMiddleware';
 import { initializeCache } from './utils/cache';
-import { initializeLoadBalancer } from './utils/loadBalancer';
+import { initializeLoadBalancer, FallbackChainEntry } from './utils/loadBalancer';
 import apiRoutes from './routes/api';
 import healthRoutes from './routes/health';
 import metricsRoutes from './routes/metrics';
@@ -247,6 +247,17 @@ class Server {
       // Initialize all providers
       await ProviderFactory.initializeAll();
 
+      // Parse fallback chain from environment
+      let fallbackChain: FallbackChainEntry[] | undefined;
+      if (process.env.MODEL_FALLBACK_CHAIN) {
+        try {
+          fallbackChain = JSON.parse(process.env.MODEL_FALLBACK_CHAIN) as FallbackChainEntry[];
+          logger.info(`Parsed fallback chain with ${fallbackChain?.length || 0} entries`);
+        } catch (e) {
+          logger.error('Failed to parse MODEL_FALLBACK_CHAIN, must be valid JSON array:', e);
+        }
+      }
+
       // Initialize load balancer (after providers)
       initializeLoadBalancer({
         circuitBreakerFailureThreshold: parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || '5', 10),
@@ -254,6 +265,7 @@ class Server {
         defaultRateLimitRetryMs: parseInt(process.env.RATE_LIMIT_DEFAULT_RETRY || '60', 10) * 1000,
         keyRotationFailureThreshold: parseInt(process.env.KEY_ROTATION_FAILURE_THRESHOLD || '5', 10),
         keyRotationDisableTimeout: parseInt(process.env.KEY_ROTATION_DISABLE_TIMEOUT || '300', 10) * 1000,
+        fallbackChain,
       });
       logger.info('Load balancer initialized with circuit breaker and rate limit manager');
 

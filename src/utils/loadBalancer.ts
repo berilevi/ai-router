@@ -1,23 +1,17 @@
 import { logger } from './logger';
-import { ProviderType, ModelMapping } from '../types';
+import { ProviderType } from '../types';
 import { getCircuitBreaker, initializeCircuitBreaker, CircuitState } from './circuitBreaker';
 import { getRateLimitManager, initializeRateLimitManager } from './rateLimitManager';
 import { getKeyRotator, initializeKeyRotator } from './keyRotator';
-import { modelMappings, providerConfigs } from './config';
+import { providerConfigs } from './config';
 
 /**
- * Fallback chain configuration for a model
+ * Single entry in a fallback chain
+ * The model field is what the client requests
  */
-export interface FallbackChainConfig {
-  primary: {
-    provider: ProviderType;
-    model: string;
-  };
-  fallbacks: Array<{
-    provider: ProviderType;
-    model: string;
-    priority: number;
-  }>;
+export interface FallbackChainEntry {
+  model: string;
+  provider: ProviderType;
 }
 
 /**
@@ -36,8 +30,8 @@ export interface LoadBalancerConfig {
   keyRotationFailureThreshold?: number;
   keyRotationDisableTimeout?: number;
 
-  // Fallback chains per model
-  fallbackChains?: Record<string, FallbackChainConfig>;
+  // Fallback chain - array where index = priority (0 is highest)
+  fallbackChain?: FallbackChainEntry[];
 }
 
 /**
@@ -48,16 +42,19 @@ export interface ProviderSelection {
   providerModel: string;
   apiKey?: string;
   isFallback: boolean;
-  fallbackReason?: string;
+  fallbackIndex: number;
 }
 
 /**
  * Load Balancer
  * Coordinates circuit breaker, rate limiting, key rotation, and fallback chains
+ *
+ * The fallback chain is a simple array - walk through it until you find a working provider.
+ * Array index = priority (0 is highest priority).
  */
 export class LoadBalancer {
   private config: LoadBalancerConfig;
-  private fallbackChains: Map<string, FallbackChainConfig> = new Map();
+  private fallbackChain: FallbackChainEntry[] = [];
   private initialized: boolean = false;
 
   constructor(config: LoadBalancerConfig = {}) {
@@ -89,15 +86,11 @@ export class LoadBalancer {
     // Register API keys from provider configs
     this.registerApiKeys();
 
-    // Load fallback chains
-    if (this.config.fallbackChains) {
-      for (const [model, chain] of Object.entries(this.config.fallbackChains)) {
-        this.fallbackChains.set(model, chain);
-      }
+    // Load fallback chain from config
+    if (this.config.fallbackChain && this.config.fallbackChain.length > 0) {
+      this.fallbackChain = this.config.fallbackChain;
+      logger.info(`Fallback chain loaded with ${this.fallbackChain.length} entries`);
     }
-
-    // Setup default fallback chains based on model mappings
-    this.setupDefaultFallbackChains();
 
     this.initialized = true;
     logger.info('Load balancer initialized');
@@ -127,106 +120,49 @@ export class LoadBalancer {
   }
 
   /**
-   * Setup default fallback chains based on model mappings and provider priorities
+   * Select a provider for the request
+   * Walks through the fallback chain (array) from index 0 until finding a working provider.
+   *
+   * @returns ProviderSelection if a provider is available, null if all failed
    */
-  private setupDefaultFallbackChains(): void {
-    // Group models by ollamaModel name
-    const modelGroups = new Map<string, ModelMapping[]>();
-
-    for (const mapping of modelMappings) {
-      const existing = modelGroups.get(mapping.ollamaModel) || [];
-      existing.push(mapping);
-      modelGroups.set(mapping.ollamaModel, existing);
-    }
-
-    // For models available from multiple providers, create fallback chains
-    for (const [model, mappings] of modelGroups.entries()) {
-      if (mappings.length > 1 && !this.fallbackChains.has(model)) {
-        // Sort by provider priority
-        const sorted = mappings.sort((a, b) => {
-          const priorityA = providerConfigs.find((p) => p.type === a.provider)?.priority ?? 99;
-          const priorityB = providerConfigs.find((p) => p.type === b.provider)?.priority ?? 99;
-          return priorityA - priorityB;
-        });
-
-        const primary = sorted[0];
-        const fallbacks = sorted.slice(1).map((m, i) => ({
-          provider: m.provider,
-          model: m.providerModel,
-          priority: i + 1,
-        }));
-
-        this.fallbackChains.set(model, {
-          primary: { provider: primary.provider, model: primary.providerModel },
-          fallbacks,
-        });
-      }
-    }
-  }
-
-  /**
-   * Select a provider for a model request
-   * Considers circuit breaker state, rate limits, and fallback chains
-   */
-  selectProvider(model: string): ProviderSelection | null {
+  selectProvider(): ProviderSelection | null {
     if (!this.initialized) {
       this.initialize();
+    }
+
+    // If no fallback chain configured, return null (let caller handle default routing)
+    if (this.fallbackChain.length === 0) {
+      logger.debug('No fallback chain configured, using default routing');
+      return null;
     }
 
     const circuitBreaker = getCircuitBreaker();
     const rateLimitManager = getRateLimitManager();
     const keyRotator = getKeyRotator();
 
-    // Get the fallback chain for this model
-    const chain = this.fallbackChains.get(model);
-
-    // Get direct model mapping
-    const directMapping = modelMappings.find((m) => m.ollamaModel === model);
-
-    if (!chain && !directMapping) {
-      logger.warn(`No model mapping found for: ${model}`);
-      return null;
-    }
-
-    // Build list of providers to try (primary + fallbacks)
-    const providers: Array<{ provider: ProviderType; model: string; priority: number }> = [];
-
-    if (chain) {
-      providers.push({ ...chain.primary, priority: 0 });
-      providers.push(...chain.fallbacks);
-    } else if (directMapping) {
-      providers.push({
-        provider: directMapping.provider,
-        model: directMapping.providerModel,
-        priority: 0,
-      });
-
-      // Add fallback providers with same capability
-      const fallbackProviders = this.getFallbackProviders(directMapping);
-      providers.push(...fallbackProviders);
-    }
-
-    // Try each provider in order
-    for (const candidate of providers.sort((a, b) => a.priority - b.priority)) {
-      const { provider, model: providerModel } = candidate;
+    // Walk through the chain in order (index 0 = highest priority)
+    for (let i = 0; i < this.fallbackChain.length; i++) {
+      const entry = this.fallbackChain[i];
+      const { model, provider } = entry;
 
       // Check if provider is enabled
       const providerConfig = providerConfigs.find((p) => p.type === provider);
       if (!providerConfig?.enabled) {
+        logger.debug(`Provider ${provider} not enabled, skipping`);
         continue;
       }
 
       // Check circuit breaker
-      if (!circuitBreaker.canExecute(provider, providerModel)) {
-        const state = circuitBreaker.getCircuitState(provider, providerModel);
-        logger.debug(`Circuit breaker OPEN for ${provider}:${providerModel}, retry in ${state.timeUntilRetry}ms`);
+      if (!circuitBreaker.canExecute(provider, model)) {
+        const state = circuitBreaker.getCircuitState(provider, model);
+        logger.debug(`Circuit breaker OPEN for ${provider}:${model}, retry in ${state.timeUntilRetry}ms`);
         continue;
       }
 
       // Check rate limit
-      if (rateLimitManager.isRateLimited(provider, providerModel)) {
-        const status = rateLimitManager.getRateLimitStatus(provider, providerModel);
-        logger.debug(`Rate limited for ${provider}:${providerModel}, retry in ${status.timeUntilReset}ms`);
+      if (rateLimitManager.isRateLimited(provider, model)) {
+        const status = rateLimitManager.getRateLimitStatus(provider, model);
+        logger.debug(`Rate limited for ${provider}:${model}, retry in ${status.timeUntilReset}ms`);
         continue;
       }
 
@@ -244,62 +180,21 @@ export class LoadBalancer {
         apiKey = providerConfig.apiKey;
       }
 
-      const isFallback = candidate.priority > 0;
-      const fallbackReason = isFallback
-        ? `Primary provider unavailable, using fallback (priority ${candidate.priority})`
-        : undefined;
-
-      logger.debug(`Selected provider ${provider}:${providerModel} for model ${model}`, {
-        isFallback,
-        fallbackReason,
+      logger.debug(`Selected provider ${provider}:${model} at index ${i}`, {
+        isFallback: i > 0,
       });
 
       return {
         provider,
-        providerModel,
+        providerModel: model,
         apiKey,
-        isFallback,
-        fallbackReason,
+        isFallback: i > 0,
+        fallbackIndex: i,
       };
     }
 
-    logger.error(`No available providers for model: ${model}`);
+    logger.error('No available providers in fallback chain');
     return null;
-  }
-
-  /**
-   * Get fallback providers for a model mapping
-   */
-  private getFallbackProviders(
-    mapping: ModelMapping
-  ): Array<{ provider: ProviderType; model: string; priority: number }> {
-    const fallbacks: Array<{ provider: ProviderType; model: string; priority: number }> = [];
-
-    // Find other providers with similar models
-    const similarMappings = modelMappings.filter(
-      (m) =>
-        m.provider !== mapping.provider &&
-        m.supportsImages === mapping.supportsImages &&
-        m.supportsTools === mapping.supportsTools
-    );
-
-    // Sort by provider priority
-    const sorted = similarMappings.sort((a, b) => {
-      const priorityA = providerConfigs.find((p) => p.type === a.provider)?.priority ?? 99;
-      const priorityB = providerConfigs.find((p) => p.type === b.provider)?.priority ?? 99;
-      return priorityA - priorityB;
-    });
-
-    // Take top 3 fallbacks
-    for (let i = 0; i < Math.min(3, sorted.length); i++) {
-      fallbacks.push({
-        provider: sorted[i].provider,
-        model: sorted[i].providerModel,
-        priority: i + 1,
-      });
-    }
-
-    return fallbacks;
   }
 
   /**
@@ -354,18 +249,18 @@ export class LoadBalancer {
   }
 
   /**
-   * Add a custom fallback chain for a model
+   * Set the fallback chain
    */
-  setFallbackChain(model: string, chain: FallbackChainConfig): void {
-    this.fallbackChains.set(model, chain);
-    logger.info(`Fallback chain set for model: ${model}`);
+  setFallbackChain(chain: FallbackChainEntry[]): void {
+    this.fallbackChain = chain;
+    logger.info(`Fallback chain updated with ${chain.length} entries`);
   }
 
   /**
-   * Get fallback chain for a model
+   * Get the current fallback chain
    */
-  getFallbackChain(model: string): FallbackChainConfig | undefined {
-    return this.fallbackChains.get(model);
+  getFallbackChain(): FallbackChainEntry[] {
+    return this.fallbackChain;
   }
 
   /**
@@ -386,7 +281,7 @@ export class LoadBalancer {
       totalKeys: number;
       availableKeys: number;
     }>;
-    fallbackChains: string[];
+    fallbackChain: FallbackChainEntry[];
   } {
     const circuitBreaker = getCircuitBreaker();
     const rateLimitManager = getRateLimitManager();
@@ -407,7 +302,7 @@ export class LoadBalancer {
       circuitBreakers: circuitBreaker.getAllStates(),
       rateLimits: rateLimitManager.getAllStates(),
       keyRotators: keyRotatorStatus,
-      fallbackChains: Array.from(this.fallbackChains.keys()),
+      fallbackChain: this.fallbackChain,
     };
   }
 

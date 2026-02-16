@@ -188,7 +188,7 @@ router.get('/loadbalancer', async (_req: Request, res: Response) => {
       circuitBreakers,
       rateLimits,
       keyRotators,
-      fallbackChains: status.fallbackChains,
+      fallbackChain: status.fallbackChain,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
