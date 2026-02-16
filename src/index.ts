@@ -250,10 +250,10 @@ class Server {
       // Initialize load balancer (after providers)
       initializeLoadBalancer({
         circuitBreakerFailureThreshold: parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || '5', 10),
-        circuitBreakerTimeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT_MS || '60000', 10),
-        defaultRateLimitRetryMs: parseInt(process.env.RATE_LIMIT_DEFAULT_RETRY_MS || '60000', 10),
+        circuitBreakerTimeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '60', 10) * 1000,
+        defaultRateLimitRetryMs: parseInt(process.env.RATE_LIMIT_DEFAULT_RETRY || '60', 10) * 1000,
         keyRotationFailureThreshold: parseInt(process.env.KEY_ROTATION_FAILURE_THRESHOLD || '5', 10),
-        keyRotationDisableTimeout: parseInt(process.env.KEY_ROTATION_DISABLE_TIMEOUT_MS || '300000', 10),
+        keyRotationDisableTimeout: parseInt(process.env.KEY_ROTATION_DISABLE_TIMEOUT || '300', 10) * 1000,
       });
       logger.info('Load balancer initialized with circuit breaker and rate limit manager');
 

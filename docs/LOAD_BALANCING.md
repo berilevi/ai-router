@@ -44,14 +44,14 @@ Execute Request
 ```bash
 # Circuit Breaker Configuration
 CIRCUIT_BREAKER_FAILURE_THRESHOLD=5    # Failures before circuit opens
-CIRCUIT_BREAKER_TIMEOUT_MS=60000       # Time before retrying (default: 1 min)
+CIRCUIT_BREAKER_TIMEOUT=60             # Seconds before retrying (default: 60)
 
 # Rate Limit Manager
-RATE_LIMIT_DEFAULT_RETRY_MS=60000      # Default retry when no Retry-After header
+RATE_LIMIT_DEFAULT_RETRY=60            # Default retry in seconds when no Retry-After header
 
 # API Key Rotation
 KEY_ROTATION_FAILURE_THRESHOLD=5       # Failures before key is disabled
-KEY_ROTATION_DISABLE_TIMEOUT_MS=300000 # Key disable duration (default: 5 min)
+KEY_ROTATION_DISABLE_TIMEOUT=300       # Key disable duration in seconds (default: 5 min)
 
 # Multiple API Keys (comma-separated)
 OPENAI_API_KEYS=sk-key1,sk-key2,sk-key3
@@ -271,11 +271,11 @@ ANTHROPIC_API_KEYS=sk-ant-prod-1,sk-ant-prod-2
 Balance between fast recovery and respecting rate limits:
 
 ```bash
-# Quick recovery for transient failures
-CIRCUIT_BREAKER_TIMEOUT_MS=30000
+# Quick recovery for transient failures (30 seconds)
+CIRCUIT_BREAKER_TIMEOUT=30
 
-# Respect rate limits
-RATE_LIMIT_DEFAULT_RETRY_MS=60000
+# Respect rate limits (60 seconds default)
+RATE_LIMIT_DEFAULT_RETRY=60
 ```
 
 ### 3. Define Fallback Chains
