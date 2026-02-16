@@ -28,9 +28,16 @@ ANTHROPIC_CACHE_MIN_TOKENS=1024
 # Auto-cache system prompts (default: true, recommended)
 ANTHROPIC_CACHE_SYSTEM_PROMPT=true
 
-# Auto-cache last user message (default: false)
+# Auto-cache last user message (default: false, keep disabled)
+# User messages are typically unique - caching them costs 25% MORE
+# Only enable for special cases with repeated content
 ANTHROPIC_CACHE_LAST_MESSAGE=false
 ```
+
+**Why these defaults?**
+- ✅ **System prompts** rarely change (high reuse rate = cost savings)
+- ❌ **Last message** usually unique (low reuse rate = cost increase)
+- ⚠️ Cache writes cost 25% MORE than regular tokens - only cache repeated content
 
 **Benefits:**
 - ✅ Automatic cost savings without client changes
