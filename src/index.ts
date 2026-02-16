@@ -17,6 +17,7 @@ import healthRoutes from './routes/health';
 import metricsRoutes from './routes/metrics';
 import anthropicRoutes from './routes/anthropic';
 import batchRoutes from './routes/batch';
+import openaiBatchRoutes from './routes/openai-batch';
 
 class Server {
   public app: Application;
@@ -160,6 +161,9 @@ class Server {
     // Anthropic Batch API routes
     this.app.use(batchRoutes);
 
+    // OpenAI Batch API routes
+    this.app.use('/v1', openaiBatchRoutes);
+
     // Root endpoint with API documentation
     this.app.get('/', (_req: Request, res: Response) => {
       res.json({
@@ -180,15 +184,26 @@ class Server {
           'POST /v1/messages': 'Create message (Anthropic API)',
           'GET /v1/models': 'List models (Anthropic API)',
           'POST /v1/messages/batches': 'Create message batch (Anthropic Batch API)',
-          'GET /v1/messages/batches': 'List batches',
-          'GET /v1/messages/batches/:id': 'Get batch status',
-          'GET /v1/messages/batches/:id/results': 'Get batch results',
-          'POST /v1/messages/batches/:id/cancel': 'Cancel batch',
+          'GET /v1/messages/batches': 'List Anthropic batches',
+          'GET /v1/messages/batches/:id': 'Get Anthropic batch status',
+          'GET /v1/messages/batches/:id/results': 'Get Anthropic batch results',
+          'POST /v1/messages/batches/:id/cancel': 'Cancel Anthropic batch',
+          'POST /v1/batches': 'Create batch (OpenAI Batch API)',
+          'GET /v1/batches': 'List OpenAI batches',
+          'GET /v1/batches/:id': 'Get OpenAI batch status',
+          'GET /v1/batches/:id/results': 'Get OpenAI batch results',
+          'GET /v1/batches/:id/errors': 'Get OpenAI batch errors',
+          'POST /v1/batches/:id/cancel': 'Cancel OpenAI batch',
+          'POST /v1/files': 'Upload file for batch processing',
+          'GET /v1/files/:id/content': 'Get file content',
+          'DELETE /v1/files/:id': 'Delete file',
         },
         documentation: 'https://github.com/yourusername/ai-router',
         features: [
           'Multi-provider support (Copilot, Gemini, OpenAI, Anthropic)',
           'Anthropic Messages API compatibility for Claude Code',
+          'OpenAI Batch API (50% cost reduction)',
+          'Anthropic Message Batches API (50% cost reduction)',
           'Request queue with rate limiting',
           'Session persistence for conversations',
           'True streaming responses with SSE',

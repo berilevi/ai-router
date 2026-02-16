@@ -1,7 +1,7 @@
 # AI Router - Pending TODO Items
 
-**Last Updated:** 2026-02-13
-**Completion Rate:** 11/28 (39%)
+**Last Updated:** 2026-02-16
+**Completion Rate:** 12/28 (43%)
 **Status:** Production Ready
 
 See `docs/` folder for completed feature implementations.
@@ -68,9 +68,11 @@ Improve reliability and distribution of requests.
 
 **Tasks:**
 - [ ] Round-robin between multiple API keys
-- [ ] Provider fallback chains
+- [ ] Config file must support fallback chains based on AI model ids, ie user want to use up free models credits and fallback on premium models with limits
+- [ ] Provider fallback chains, respect priority order as rate limits allow, on API errors fallback gracefully to the next provider in fallback chain
 - [ ] Geo-based routing
 - [ ] Circuit breaker pattern
+- [ ] Handle API error 429, disable the model gracefully until rate limit time passes and re-enable it 
 
 ---
 
@@ -117,19 +119,6 @@ Add analytics to understand usage patterns.
 ---
 
 ## Quick Wins (Phase 0.5) - OpenAI SDK Features
-
-### 24. OpenAI Batch Processing API
-**Priority:** Medium
-**Status:** Not Started
-
-Implement OpenAI's batch processing for 50% cost reduction.
-
-**Benefits:**
-- 50% cost discount
-- Higher throughput
-- Async processing
-
----
 
 ### 25. OpenAI Responses API
 **Priority:** High
@@ -213,4 +202,4 @@ Integrate Copilot's production-tested agent runtime.
 - All items are **optional** - current system is production-ready
 - Prioritize based on use case
 - Implementation details for **completed items** are in `docs/` folder
-- See `docs/CACHE_IMPLEMENTATION.md`, `docs/PROMPT_CACHING.md`, etc. for feature documentation
+- See `docs/CACHE_IMPLEMENTATION.md`, `docs/PROMPT_CACHING.md`, `docs/OPENAI_BATCH.md`, etc. for feature documentation
