@@ -190,6 +190,10 @@ export class RetryHandler {
     options: ChatCompletionOptions & { provider: ProviderType }
   ): Promise<RetryResult<ChatCompletionResponse>> {
     const { provider, ...completionOptions } = options;
+    const requestStartTime = Date.now();
+
+    // Log incoming client request
+    logger.info(`[REQUEST] Client requested model: ${options.model}, default provider: ${provider}`);
 
     // Try to use load balancer for provider selection
     let selectedProvider: ProviderType = provider;
@@ -206,15 +210,21 @@ export class RetryHandler {
         selectedApiKey = selection.apiKey;
 
         if (selection.isFallback) {
-          logger.info(`Load balancer selected fallback: ${selectedProvider}:${selectedModel} (index ${selection.fallbackIndex})`);
+          logger.info(`[ROUTING] Fallback selected: ${selectedProvider}:${selectedModel} (chain index ${selection.fallbackIndex})`);
+        } else {
+          logger.info(`[ROUTING] Primary selected: ${selectedProvider}:${selectedModel}`);
         }
+      } else {
+        logger.info(`[ROUTING] Using default: ${selectedProvider}:${selectedModel} (no fallback chain configured)`);
       }
     } catch (e) {
       logger.debug('Load balancer selection failed, using default provider:', e);
+      logger.info(`[ROUTING] Using default: ${selectedProvider}:${selectedModel}`);
     }
 
     const providerInstance = ProviderFactory.getProvider(selectedProvider);
     if (!providerInstance) {
+      logger.error(`[ROUTING] Provider ${selectedProvider} not found`);
       return {
         success: false,
         error: new Error(`Provider ${selectedProvider} not found`),
@@ -246,11 +256,15 @@ export class RetryHandler {
       }
     );
 
+    const duration = Date.now() - requestStartTime;
+
     // Record result with load balancer
     if (result.success) {
       this.recordSuccess(selectedProvider, selectedModel, selectedApiKey);
+      logger.info(`[RESPONSE] Success: ${selectedProvider}:${selectedModel} (${duration}ms, ${result.attempts} attempt(s))`);
     } else if (result.error) {
       this.recordFailure(selectedProvider, selectedModel, selectedApiKey, result.error);
+      logger.warn(`[RESPONSE] Failed: ${selectedProvider}:${selectedModel} (${duration}ms, ${result.attempts} attempt(s)) - ${result.error.message}`);
     }
 
     return result;
@@ -263,18 +277,52 @@ export class RetryHandler {
     options: ChatCompletionOptions & { provider: ProviderType }
   ): AsyncGenerator<StreamChunk> {
     const { provider, ...completionOptions } = options;
+    const requestStartTime = Date.now();
+
+    // Log incoming client request
+    logger.info(`[REQUEST] Client requested streaming model: ${options.model}, default provider: ${provider}`);
+
+    // Try to use load balancer for provider selection
+    let selectedProvider: ProviderType = provider;
+    let selectedModel: string = options.model;
+    let selectedApiKey: string | undefined;
+
+    try {
+      const loadBalancer = getLoadBalancer();
+      const selection = loadBalancer.selectProvider();
+
+      if (selection) {
+        selectedProvider = selection.provider;
+        selectedModel = selection.providerModel;
+        selectedApiKey = selection.apiKey;
+
+        if (selection.isFallback) {
+          logger.info(`[ROUTING] Fallback selected: ${selectedProvider}:${selectedModel} (chain index ${selection.fallbackIndex})`);
+        } else {
+          logger.info(`[ROUTING] Primary selected: ${selectedProvider}:${selectedModel}`);
+        }
+      } else {
+        logger.info(`[ROUTING] Using default: ${selectedProvider}:${selectedModel} (no fallback chain configured)`);
+      }
+    } catch (e) {
+      logger.debug('Load balancer selection failed, using default provider:', e);
+      logger.info(`[ROUTING] Using default: ${selectedProvider}:${selectedModel}`);
+    }
 
     const result = await this.executeWithRetry<AsyncGenerator<StreamChunk>>(
       async () => {
-        const providerInstance = ProviderFactory.getProvider(provider);
+        const providerInstance = ProviderFactory.getProvider(selectedProvider);
         if (!providerInstance) {
-          throw new Error(`Provider ${provider} not found`);
+          throw new Error(`Provider ${selectedProvider} not found`);
         }
-        return providerInstance.chatCompletionStream(completionOptions);
+        return providerInstance.chatCompletionStream({
+          ...completionOptions,
+          model: selectedModel,
+        });
       },
       {
-        provider,
-        model: options.model,
+        provider: selectedProvider,
+        model: selectedModel,
         createFallbackOperation: (fallbackProvider: ProviderType, fallbackModel: string) => {
           const fallbackInstance = ProviderFactory.getProvider(fallbackProvider);
           if (!fallbackInstance || !fallbackInstance.isAvailable()) {
@@ -290,8 +338,15 @@ export class RetryHandler {
     );
 
     if (!result.success || !result.result) {
+      const duration = Date.now() - requestStartTime;
+      logger.warn(`[RESPONSE] Streaming failed: ${selectedProvider}:${selectedModel} (${duration}ms) - ${result.error?.message}`);
+      this.recordFailure(selectedProvider, selectedModel, selectedApiKey, result.error || new Error('Unknown error'));
       throw result.error || new Error('All retries and fallbacks failed');
     }
+
+    const duration = Date.now() - requestStartTime;
+    logger.info(`[RESPONSE] Streaming started: ${selectedProvider}:${selectedModel} (${duration}ms to first chunk)`);
+    this.recordSuccess(selectedProvider, selectedModel, selectedApiKey);
 
     yield* result.result;
   }
